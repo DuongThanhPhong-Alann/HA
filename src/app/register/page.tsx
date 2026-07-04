@@ -1,0 +1,2 @@
+import Link from "next/link"; import { AuthCard } from "@/components/auth/AuthCard"; import { RegisterForm } from "@/components/auth/RegisterForm";
+export default function Page(){return <AuthCard title="Tạo tài khoản" subtitle="Bắt đầu lưu và theo dõi huyết áp của bạn" footer={<>Đã có tài khoản? <Link className="font-bold text-cyan-700" href="/login">Đăng nhập</Link></>}><RegisterForm/></AuthCard>}

@@ -1,0 +1,2 @@
+import { AppShell } from "@/components/layout/AppShell"; import { MeasurementForm } from "@/components/measurements/MeasurementForm";
+export default function Page(){return <AppShell><div className="mx-auto max-w-4xl p-5 md:p-8"><p className="text-sm font-bold text-cyan-700">LẦN ĐO MỚI</p><h1 className="mt-1 text-3xl font-black">Ghi lại chỉ số</h1><p className="mb-7 mt-2 text-slate-500">Nhập đúng các số hiển thị trên máy đo huyết áp.</p><MeasurementForm/></div></AppShell>}

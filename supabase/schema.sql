@@ -1,0 +1,18 @@
+create extension if not exists pgcrypto;
+create table if not exists public.profiles (id uuid primary key references auth.users(id) on delete cascade, full_name text not null, email text not null, phone text, gender text, birth_date date, created_at timestamptz default now(), updated_at timestamptz default now());
+create table if not exists public.blood_pressure_records (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, systolic int not null check (systolic between 40 and 260), diastolic int not null check (diastolic between 30 and 180), pulse int not null check (pulse between 30 and 220), category text not null, severity text not null, warning_message text not null, measured_at timestamptz not null default now(), note text check (char_length(note) <= 500), image_path text, image_url text, created_at timestamptz default now(), updated_at timestamptz default now(), check (systolic > diastolic));
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ begin insert into public.profiles (id, full_name, email, phone) values (new.id, coalesce(new.raw_user_meta_data->>'full_name', 'Người dùng'), new.email, new.raw_user_meta_data->>'phone') on conflict (id) do nothing; return new; end; $$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
+alter table public.profiles enable row level security; alter table public.blood_pressure_records enable row level security;
+create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
+create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
+create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+create policy "Users can view own records" on public.blood_pressure_records for select using (auth.uid() = user_id);
+create policy "Users can insert own records" on public.blood_pressure_records for insert with check (auth.uid() = user_id);
+create policy "Users can update own records" on public.blood_pressure_records for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can delete own records" on public.blood_pressure_records for delete using (auth.uid() = user_id);
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('bp-images', 'bp-images', false, 5242880, array['image/jpeg','image/png','image/webp']) on conflict (id) do update set public = false, file_size_limit = 5242880, allowed_mime_types = excluded.allowed_mime_types;
+create policy "Users upload own BP images" on storage.objects for insert to authenticated with check (bucket_id = 'bp-images' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "Users view own BP images" on storage.objects for select to authenticated using (bucket_id = 'bp-images' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "Users delete own BP images" on storage.objects for delete to authenticated using (bucket_id = 'bp-images' and (storage.foldername(name))[1] = auth.uid()::text);

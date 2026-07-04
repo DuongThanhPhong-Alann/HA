@@ -1,0 +1,2 @@
+import Link from "next/link"; import { AuthCard } from "@/components/auth/AuthCard"; import { LoginForm } from "@/components/auth/LoginForm";
+export default function Page(){return <AuthCard title="Chào mừng trở lại" subtitle="Đăng nhập để tiếp tục theo dõi chỉ số" footer={<>Chưa có tài khoản? <Link className="font-bold text-cyan-700" href="/register">Đăng ký miễn phí</Link></>}><LoginForm/></AuthCard>}
