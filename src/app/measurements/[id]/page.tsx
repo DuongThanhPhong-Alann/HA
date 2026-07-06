@@ -23,7 +23,7 @@ export default async function MeasurementDetailPage({ params }: { params: Promis
   }
   const crisis = record.category === "HYPERTENSIVE_CRISIS";
   return <AppShell><div className="mx-auto max-w-4xl p-4 sm:p-5 md:p-8">
-    <Link href="/measurements" className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-slate-500 sm:mb-6"><ArrowLeft size={17}/>Quay lại lịch sử</Link>
+    <Link href="/measurements" className="page-back mb-5 inline-flex items-center gap-2 text-sm font-bold sm:mb-6"><ArrowLeft size={17}/>Quay lại lịch sử</Link>
     <div className={`card overflow-hidden ${crisis ? "border-2 border-red-600" : ""}`}>
       <div className={`p-4 sm:p-6 ${crisis ? "bg-red-700 text-white" : "bg-cyan-50"}`}><CategoryBadge category={record.category}/><h1 className="mt-3 text-xl font-black leading-7 sm:mt-4 sm:text-2xl">{crisis ? "Cảnh báo rất cao — hãy đo lại sau vài phút" : "Chi tiết lần đo"}</h1></div>
       <div className="p-4 sm:p-6">
