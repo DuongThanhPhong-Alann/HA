@@ -12,9 +12,18 @@ export function ProfileForm({ profile, user }: { profile: Profile | null; user: 
     event.preventDefault();
     setBusy(true);
     const form = new FormData(event.currentTarget);
-    const { error } = await createClient().from("profiles").upsert({ id: user.id, email: user.email, full_name: form.get("full_name"), phone: form.get("phone") || null, gender: form.get("gender") || null, birth_date: form.get("birth_date") || null, weekly_report_enabled: form.get("weekly_report_enabled") === "on", monthly_report_enabled: form.get("monthly_report_enabled") === "on", report_timezone: "Asia/Ho_Chi_Minh", updated_at: new Date().toISOString() });
+    const supabase = createClient();
+    const basicProfile = { id: user.id, email: user.email, full_name: form.get("full_name"), phone: form.get("phone") || null, gender: form.get("gender") || null, birth_date: form.get("birth_date") || null, updated_at: new Date().toISOString() };
+    let { error } = await supabase.from("profiles").upsert({ ...basicProfile, weekly_report_enabled: form.get("weekly_report_enabled") === "on", monthly_report_enabled: form.get("monthly_report_enabled") === "on", report_timezone: "Asia/Ho_Chi_Minh" });
+    let savedBasicOnly = false;
+    if (error && /Could not find the '(weekly_report_enabled|monthly_report_enabled|report_timezone)' column/i.test(error.message)) {
+      ({ error } = await supabase.from("profiles").upsert(basicProfile));
+      savedBasicOnly = !error;
+    }
     setBusy(false);
-    error ? toast.error(error.message) : toast.success("Đã cập nhật hồ sơ");
+    if (error) toast.error(error.message);
+    else if (savedBasicOnly) toast.warning("Đã lưu thông tin cơ bản. Database cần cập nhật để lưu cài đặt báo cáo.");
+    else toast.success("Đã cập nhật hồ sơ");
   }}>
     <div className="flex items-center gap-4 border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-cyan-50 p-5 sm:p-6">
       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-600 text-white shadow-lg shadow-violet-200"><UserRound size={23} /></span>
