@@ -27,7 +27,7 @@ export default function Home() {
         </div>
         <div className="relative min-h-[30rem] animate-rise [animation-delay:120ms]">
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[58%]" aria-hidden="true"><div className="home-planet" /></div>
-          <div className="reading-console card absolute inset-x-3 bottom-0 z-10 mx-auto max-w-md overflow-hidden p-5 backdrop-blur-2xl sm:p-6">
+          <div className="reading-console card absolute bottom-0 left-1/2 z-10 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 overflow-hidden p-4 backdrop-blur-2xl sm:p-6">
             <div className="flex items-center justify-between"><div><p className="eyebrow"><Orbit size={14}/> Tín hiệu gần nhất</p><p className="mt-1 text-xs text-slate-400">Hôm nay · 07:30</p></div><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-700">● Bình thường</span></div>
             <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">{[[118,"SYS","mmHg"],[76,"DIA","mmHg"],[72,"PULSE","lần/phút"]].map(([value,label,unit])=><div key={label} className="reading-value rounded-2xl p-3 text-center sm:p-4"><p className="text-[10px] font-black tracking-wider text-violet-600 sm:text-xs">{label}</p><b className="mt-1 block text-3xl tracking-tight sm:text-4xl">{value}</b><span className="text-[9px] text-slate-400 sm:text-[10px]">{unit}</span></div>)}</div>
           </div>

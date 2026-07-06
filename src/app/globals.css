@@ -75,6 +75,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .input:hover { border-color: #c4c0e8; }
 .input:focus { border-color: #795af0; background: #fff; box-shadow: 0 0 0 4px rgba(117, 83, 239, .12), 0 8px 22px rgba(71, 48, 160, .08); }
 .input:disabled { color: #73798d; background: #f1f2f7; }
+input[type="date"].input,
+input[type="datetime-local"].input {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow: hidden;
+}
 
 .btn {
   display: inline-flex;
@@ -230,7 +238,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
   background-image: radial-gradient(circle, #fff 0 1px, transparent 1.4px), radial-gradient(circle, #8ee5ff 0 1px, transparent 1.5px);
   background-position: 0 0, 37px 53px; background-size: 91px 91px, 143px 143px;
 }
-.app-stage { position: relative; z-index: 2; }
+.app-stage { position: relative; z-index: 2; min-width: 0; max-width: 100%; overflow-x: clip; }
+.app-stage form,
+.app-stage fieldset,
+.app-stage label { min-width: 0; max-width: 100%; }
 .page-heading { color: #fff; text-shadow: 0 3px 22px rgba(0,0,0,.28); }
 .page-subheading { color: rgba(225, 229, 255, .66); }
 .page-eyebrow { color: #92efff; }
@@ -285,7 +296,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .hero-panel::after { display: none; }
   .card { border-radius: 1rem; }
   .auth-card { border-radius: 1.25rem; }
-  .input { min-height: 2.85rem; font-size: 16px; }
+  .input { min-width: 0; max-width: 100%; min-height: 2.85rem; font-size: 16px; }
+  input[type="date"].input,
+  input[type="datetime-local"].input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
   .btn { min-height: 2.8rem; }
   .stat-card { padding: 1rem; }
   .stat-card b { font-size: 1.55rem; }

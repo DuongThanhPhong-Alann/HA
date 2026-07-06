@@ -22,6 +22,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="relative mt-auto border-t border-white/10 pt-4 [&_button]:text-indigo-100/70 [&_button:hover]:bg-white/10 [&_button:hover]:text-white"><LogoutButton /></div>
     </aside>
     <main className="app-stage min-w-0 w-full pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-white/10 bg-[#151432]/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_rgba(30,22,83,.22)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[10px] leading-tight text-indigo-100/70 transition hover:text-cyan-200"><Icon className="shrink-0" size={20} /><span className="line-clamp-1 w-full">{label}</span></Link>)}</nav>
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-white/10 bg-[#151432]/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_35px_rgba(30,22,83,.22)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-indigo-100/70 transition hover:text-cyan-200"><Icon className="shrink-0" size={19} /><span className="line-clamp-1 w-full">{label}</span></Link>)}<LogoutButton mobile /></nav>
   </div>;
 }
