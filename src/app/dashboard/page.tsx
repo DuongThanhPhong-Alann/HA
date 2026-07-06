@@ -1,3 +1,53 @@
-import { AppShell } from "@/components/layout/AppShell"; import { BloodPressureChart } from "@/components/dashboard/BloodPressureChart"; import { CategoryBadge } from "@/components/measurements/CategoryBadge"; import { createClient } from "@/lib/supabase/server"; import type { Measurement } from "@/types/database"; import Link from "next/link"; import { format,subDays } from "date-fns"; import { ArrowRight, Plus } from "lucide-react";
-const avg=(a:Measurement[],key:"systolic"|"diastolic"|"pulse")=>a.length?Math.round(a.reduce((n,x)=>n+x[key],0)/a.length):"—";
-export default async function Page(){const s=await createClient();const {data:{user}}=await s.auth.getUser();const {data}=await s.from("blood_pressure_records").select("*").order("measured_at",{ascending:false});const r=(data||[]) as Measurement[];const latest=r[0];const recent=r.filter(x=>new Date(x.measured_at)>=subDays(new Date(),7));const dangers=r.filter(x=>new Date(x.measured_at)>=subDays(new Date(),30)&&["danger","emergency"].includes(x.severity)).length;return <AppShell><div className="mx-auto max-w-6xl p-5 md:p-8"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><p className="text-sm font-bold text-cyan-700">TỔNG QUAN SỨC KHỎE</p><h1 className="mt-1 text-3xl font-black">Xin chào{user?.user_metadata?.full_name?`, ${user.user_metadata.full_name}`:""}</h1><p className="mt-2 text-slate-500">Theo dõi đều đặn để hiểu rõ hơn về chỉ số của bạn.</p></div><Link href="/measurements/new" className="btn btn-primary"><Plus size={19}/>Thêm lần đo mới</Link></div>{latest?<section className="card mt-7 overflow-hidden"><div className="flex flex-col gap-6 p-6 md:flex-row md:items-center"><div className="flex-1"><p className="text-xs font-extrabold text-slate-400">LẦN ĐO GẦN NHẤT · {format(new Date(latest.measured_at),"dd/MM/yyyy HH:mm")}</p><div className="mt-5 flex gap-8">{[[latest.systolic,"SYS"],[latest.diastolic,"DIA"],[latest.pulse,"PULSE"]].map(([v,l])=><div key={l}><b className="text-4xl">{v}</b><p className="text-xs text-slate-400">{l}</p></div>)}</div></div><div><CategoryBadge category={latest.category}/><Link href={`/measurements/${latest.id}`} className="mt-3 flex items-center gap-1 text-sm font-bold text-cyan-700">Xem chi tiết <ArrowRight size={16}/></Link></div></div></section>:<section className="card mt-7 p-9 text-center"><h2 className="text-xl font-extrabold">Chưa có lần đo nào</h2><p className="mt-2 text-slate-500">Thêm kết quả đầu tiên để bắt đầu theo dõi.</p><Link href="/measurements/new" className="btn btn-primary mt-5">Thêm lần đo</Link></section>}<section className="my-5 grid grid-cols-2 gap-3 lg:grid-cols-5">{[[r.length,"Tổng lần đo"],[avg(recent,"systolic"),"SYS TB · 7 ngày"],[avg(recent,"diastolic"),"DIA TB · 7 ngày"],[avg(recent,"pulse"),"PULSE TB · 7 ngày"],[dangers,"Cảnh báo · 30 ngày"]].map(([v,l])=><div key={l} className="card p-5"><b className="text-3xl">{v}</b><p className="mt-2 text-xs font-bold text-slate-500">{l}</p></div>)}</section><BloodPressureChart records={r}/><p className="mt-5 rounded-xl bg-slate-100 p-4 text-xs leading-5 text-slate-500">Thông tin chỉ mang tính tham khảo. Nếu có triệu chứng bất thường, hãy liên hệ bác sĩ hoặc cơ sở y tế.</p></div></AppShell>}
+import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subDays } from "date-fns";
+import { ArrowRight, CalendarDays, Plus, Sparkles } from "lucide-react";
+import Link from "next/link";
+
+import { BloodPressureChart } from "@/components/dashboard/BloodPressureChart";
+import { PeriodAssessment } from "@/components/dashboard/PeriodAssessment";
+import { AppShell } from "@/components/layout/AppShell";
+import { CategoryBadge } from "@/components/measurements/CategoryBadge";
+import { summarizeMeasurements } from "@/lib/health-summary";
+import { createClient } from "@/lib/supabase/server";
+import type { Measurement } from "@/types/database";
+
+const inRange = (record: Measurement, start: Date, end: Date) => {
+  const time = new Date(record.measured_at).getTime();
+  return time >= start.getTime() && time <= end.getTime();
+};
+const average = (records: Measurement[], key: "systolic" | "diastolic" | "pulse") =>
+  records.length ? Math.round(records.reduce((sum, record) => sum + record[key], 0) / records.length) : "—";
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data } = await supabase.from("blood_pressure_records").select("*").order("measured_at", { ascending: false });
+  const records = (data ?? []) as Measurement[];
+  const now = new Date();
+  const latest = records[0];
+  const recent = records.filter((record) => new Date(record.measured_at) >= subDays(now, 7));
+  const weeklyRecords = records.filter((record) => inRange(record, startOfWeek(now, { weekStartsOn: 1 }), endOfWeek(now, { weekStartsOn: 1 })));
+  const monthlyRecords = records.filter((record) => inRange(record, startOfMonth(now), endOfMonth(now)));
+  const dangers = records.filter((record) => new Date(record.measured_at) >= subDays(now, 30) && ["danger", "emergency"].includes(record.severity)).length;
+
+  return <AppShell><div className="mx-auto max-w-7xl p-5 md:p-8">
+    <header className="hero-panel animate-rise">
+      <div className="relative z-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+        <div><p className="eyebrow text-cyan-100"><Sparkles size={14}/> Tổng quan sức khỏe</p><h1 className="mt-2 text-3xl font-black text-white md:text-4xl">Xin chào{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-cyan-50/80">Mỗi lần đo đều được đánh giá ngay. Báo cáo tuần và tháng giúp bạn nhìn thấy xu hướng dài hạn rõ ràng hơn.</p></div>
+        <Link href="/measurements/new" className="btn bg-white text-cyan-900 shadow-lg hover:-translate-y-0.5"><Plus size={19}/>Thêm lần đo mới</Link>
+      </div>
+    </header>
+
+    {latest ? <section className="card card-hover mt-6 animate-rise overflow-hidden [animation-delay:80ms]">
+      <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center">
+        <div className="flex-1"><p className="eyebrow"><CalendarDays size={14}/> Lần đo gần nhất · {format(new Date(latest.measured_at), "dd/MM/yyyy HH:mm")}</p><div className="mt-5 flex gap-5 sm:gap-10">{[[latest.systolic,"SYS"],[latest.diastolic,"DIA"],[latest.pulse,"PULSE"]].map(([value,label])=><div key={label}><b className="text-4xl font-black tracking-tight">{value}</b><p className="mt-1 text-xs font-bold text-slate-400">{label}</p></div>)}</div></div>
+        <div><CategoryBadge category={latest.category}/><Link href={`/measurements/${latest.id}`} className="mt-3 flex items-center gap-1 text-sm font-bold text-cyan-700">Xem đánh giá <ArrowRight size={16}/></Link></div>
+      </div>
+    </section> : <section className="card mt-6 p-9 text-center"><h2 className="text-xl font-extrabold">Chưa có lần đo nào</h2><p className="mt-2 text-slate-500">Thêm kết quả đầu tiên để bắt đầu theo dõi.</p></section>}
+
+    <section className="my-5 grid grid-cols-2 gap-3 lg:grid-cols-5">{[[records.length,"Tổng lần đo"],[average(recent,"systolic"),"SYS TB · 7 ngày"],[average(recent,"diastolic"),"DIA TB · 7 ngày"],[average(recent,"pulse"),"PULSE TB · 7 ngày"],[dangers,"Cảnh báo · 30 ngày"]].map(([value,label], index)=><div key={label} className="card stat-card animate-rise" style={{animationDelay:`${120 + index * 40}ms`}}><b>{value}</b><p>{label}</p></div>)}</section>
+
+    <div className="grid gap-5 xl:grid-cols-2"><PeriodAssessment label="Tuần hiện tại" summary={summarizeMeasurements(weeklyRecords)}/><PeriodAssessment label="Tháng hiện tại" summary={summarizeMeasurements(monthlyRecords)}/></div>
+    <div className="mt-5"><BloodPressureChart records={records}/></div>
+    <p className="medical-note mt-5">Thông tin chỉ mang tính tham khảo. Nếu có triệu chứng bất thường, hãy liên hệ bác sĩ hoặc cơ sở y tế.</p>
+  </div></AppShell>;
+}

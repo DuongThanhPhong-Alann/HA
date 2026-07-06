@@ -5,5 +5,5 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   { rules: { "@typescript-eslint/no-unused-expressions": "off", "react-hooks/incompatible-library": "off" } },
-  globalIgnores([".next/**", "next-env.d.ts"]),
+  globalIgnores([".next/**", "next-env.d.ts", "supabase/functions/**"]),
 ]);
