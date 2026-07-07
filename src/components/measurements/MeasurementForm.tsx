@@ -53,7 +53,7 @@ export function MeasurementForm({ locale = "vi" }: { locale?: AppLocale }) {
     if (values.systolic && values.diastolic && values.pulse) preview = classifyBloodPressure(Number(values.systolic), Number(values.diastolic), Number(values.pulse));
   } catch {}
 
-  return <form className="min-w-0 space-y-5 sm:space-y-6" onSubmit={handleSubmit(async (raw) => {
+  return <form className="medical-measurement-form min-w-0 space-y-5 sm:space-y-6" onSubmit={handleSubmit(async (raw) => {
     const value = bloodPressureSchema.parse(raw);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

@@ -1,6 +1,6 @@
 "use client";
 
-import { BellRing, Camera, Check, Images, Languages, Music2, Save, ShieldCheck, UserRound } from "lucide-react";
+import { AudioLines, BellRing, Camera, Check, HeartPulse, Images, Languages, Music2, Save, ShieldCheck, UserRound } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -46,7 +46,24 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
     setCustomPreview(URL.createObjectURL(file));
   };
 
-  return <form className="card form-panel overflow-hidden" onSubmit={async (event) => {
+  const changeMusic = async (next: MusicTrackId) => {
+    setPreferredMusic(next);
+    persistMusicPreference(next);
+    const { error } = await createClient().from("profiles").update({ preferred_music: next }).eq("id", user.id);
+    if (error) toast.warning(tx("Đã đổi nhạc trên thiết bị này; cần chạy migration để đồng bộ tài khoản.", "Music changed on this device; apply the migration for account sync."));
+    else toast.success(tx("Đã đổi bài nhạc", "Music changed"));
+  };
+
+  const changeLanguage = async (next: AppLocale) => {
+    setLanguage(next);
+    persistLocale(next);
+    const { error } = await createClient().from("profiles").update({ language: next }).eq("id", user.id);
+    if (error) toast.warning(text(next,"Đã đổi ngôn ngữ trên thiết bị này; cần chạy migration để đồng bộ tài khoản.","Language changed on this device; apply the migration for account sync."));
+    else toast.success(text(next,"Đã đổi ngôn ngữ","Language changed"));
+    router.refresh();
+  };
+
+  return <div className="space-y-5"><form className="card form-panel profile-medical-card overflow-hidden" onSubmit={async (event) => {
     event.preventDefault();
     setBusy(true);
     const form = new FormData(event.currentTarget);
@@ -69,10 +86,10 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
     }
 
     const basicProfile = { id: user.id, email: user.email, full_name: form.get("full_name"), phone: form.get("phone") || null, gender: form.get("gender") || null, birth_date: form.get("birth_date") || null, updated_at: new Date().toISOString() };
-    let { error } = await supabase.from("profiles").upsert({ ...basicProfile, weekly_report_enabled: form.get("weekly_report_enabled") === "on", monthly_report_enabled: form.get("monthly_report_enabled") === "on", report_timezone: "Asia/Ho_Chi_Minh", avatar_preset: avatarPreset, avatar_path: nextAvatarPath, preferred_music: preferredMusic, language });
+    let { error } = await supabase.from("profiles").upsert({ ...basicProfile, weekly_report_enabled: form.get("weekly_report_enabled") === "on", monthly_report_enabled: form.get("monthly_report_enabled") === "on", report_timezone: "Asia/Ho_Chi_Minh", avatar_preset: avatarPreset, avatar_path: nextAvatarPath });
     let savedBasicOnly = false;
 
-    if (error && /Could not find the '(weekly_report_enabled|monthly_report_enabled|report_timezone|avatar_preset|avatar_path|preferred_music|language)' column/i.test(error.message)) {
+    if (error && /Could not find the '(weekly_report_enabled|monthly_report_enabled|report_timezone|avatar_preset|avatar_path)' column/i.test(error.message)) {
       ({ error } = await supabase.from("profiles").upsert(basicProfile));
       savedBasicOnly = !error;
     }
@@ -86,14 +103,13 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
     setBusy(false);
     if (error) toast.error(error.message);
     else {
-      persistLocale(language);
-      persistMusicPreference(preferredMusic);
-      if (savedBasicOnly) toast.warning(tx("Tùy chọn đã lưu trên thiết bị này. Hãy chạy migration để đồng bộ giữa các thiết bị.", "Preferences were saved on this device. Apply the migration to sync them across devices."));
-      else toast.success(tx("Đã cập nhật hồ sơ và tùy chọn", "Profile and preferences updated"));
+      if (savedBasicOnly) toast.warning(tx("Đã lưu thông tin cơ bản. Hãy chạy migration hồ sơ trên Supabase.", "Basic profile saved. Apply the profile migration in Supabase."));
+      else toast.success(tx("Đã cập nhật hồ sơ", "Profile updated"));
       router.refresh();
     }
   }}>
-    <div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 via-white to-cyan-50 p-5 sm:p-6">
+    <div className="profile-medical-cover border-b border-violet-100 p-5 sm:p-6">
+      <div className="profile-ecg" aria-hidden="true"><svg viewBox="0 0 500 42" preserveAspectRatio="none"><path d="M0 23 H110 L124 23 L132 14 L142 32 L155 3 L169 36 L180 23 H300 L314 23 L322 14 L332 32 L345 3 L359 36 L370 23 H500"/></svg></div>
       <div className="flex min-w-0 items-center gap-4">
         <span className="relative grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-white bg-gradient-to-br from-violet-600 to-cyan-600 text-white shadow-xl shadow-violet-200/70">
           {currentAvatar ? <Image src={currentAvatar} alt="Avatar hiện tại" fill unoptimized className="object-cover" sizes="80px" /> : <UserRound size={34} />}
@@ -118,14 +134,6 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
         <label className="text-sm font-bold">{tx("Giới tính", "Sex")}<select name="gender" className="input mt-2" defaultValue={profile?.gender || ""}><option value="">{tx("Không cung cấp", "Prefer not to say")}</option><option value="male">{tx("Nam", "Male")}</option><option value="female">{tx("Nữ", "Female")}</option><option value="other">{tx("Khác", "Other")}</option></select></label>
         <label className="text-sm font-bold">{tx("Ngày sinh", "Date of birth")}<input name="birth_date" type="date" className="input mt-2" defaultValue={profile?.birth_date || ""} /></label>
       </div>
-      <fieldset className="rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50/80 to-violet-50/60 p-4 sm:p-5">
-        <legend className="px-2 text-sm font-extrabold text-cyan-950"><span className="inline-flex items-center gap-2"><Languages size={16}/>{tx("Ngôn ngữ và âm nhạc", "Language and music")}</span></legend>
-        <p className="mb-4 text-xs leading-5 text-slate-600">{tx("Tùy chỉnh ngôn ngữ y khoa và bài nhạc bắt đầu sau khi đăng nhập.", "Choose the clinical interface language and the first track played after sign-in.")}</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-bold"><span className="flex items-center gap-2"><Languages size={16} className="text-cyan-700"/>{tx("Ngôn ngữ", "Language")}</span><select className="input mt-2" value={language} onChange={(event) => setLanguage(event.target.value as AppLocale)}><option value="vi">Tiếng Việt</option><option value="en">English · Clinical</option></select></label>
-          <label className="text-sm font-bold"><span className="flex items-center gap-2"><Music2 size={16} className="text-violet-700"/>{tx("Bài nhạc ưu tiên", "Preferred track")}</span><select className="input mt-2" value={preferredMusic} onChange={(event) => setPreferredMusic(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map((track) => <option key={track.id} value={track.id}>{track.title}</option>)}</select></label>
-        </div>
-      </fieldset>
       <fieldset className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/80 to-cyan-50/60 p-4 sm:p-5">
         <legend className="px-2 text-sm font-extrabold text-violet-900"><span className="inline-flex items-center gap-2"><BellRing size={16} />{tx("Báo cáo sức khỏe tự động", "Automated health reports")}</span></legend>
         <p className="mb-4 text-xs leading-5 text-slate-600">{tx("Báo cáo được gửi lúc 08:00 sáng theo giờ Việt Nam, sau khi tuần hoặc tháng kết thúc.", "Reports are delivered at 08:00 Vietnam time after each week or month ends.")}</p>
@@ -136,5 +144,17 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
       </fieldset>
       <button disabled={busy} className="btn btn-primary w-full sm:w-auto"><Save size={18} />{busy ? tx("Đang lưu...", "Saving...") : tx("Lưu thay đổi", "Save changes")}</button>
     </div>
-  </form>;
+  </form>
+  <section className="card preference-console overflow-hidden">
+    <div className="preference-console__head">
+      <span className="preference-console__heart"><HeartPulse size={21}/></span>
+      <div><p className="eyebrow">{tx("TRẠM CÁ NHÂN HÓA", "PERSONALIZATION STATION")}</p><h2 className="mt-1 font-black">{tx("Ngôn ngữ và liệu pháp âm thanh", "Language and ambient sound")}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{tx("Mọi thay đổi được áp dụng ngay, không cần nhấn lưu.", "Changes take effect immediately; no save action is required.")}</p></div>
+      <AudioLines className="ml-auto hidden text-violet-400 sm:block" size={28}/>
+    </div>
+    <div className="preference-wave" aria-hidden="true">{Array.from({length:24},(_,index)=><i key={index} style={{animationDelay:`-${index * 70}ms`}}/>)}</div>
+    <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+      <label className="preference-option"><span className="preference-option__icon preference-option__icon--language"><Languages size={20}/></span><span className="min-w-0 flex-1"><b className="block text-sm">{tx("Ngôn ngữ y khoa", "Clinical language")}</b><small className="text-slate-500">{tx("Thuật ngữ chuyên môn nhất quán", "Consistent professional terminology")}</small></span><select aria-label={tx("Ngôn ngữ","Language")} value={language} onChange={(event) => void changeLanguage(event.target.value as AppLocale)}><option value="vi">Tiếng Việt</option><option value="en">English · Clinical</option></select></label>
+      <label className="preference-option"><span className="preference-option__icon preference-option__icon--music"><Music2 size={20}/></span><span className="min-w-0 flex-1"><b className="block text-sm">{tx("Âm nhạc thư giãn", "Ambient music")}</b><small className="text-slate-500">{tx("Đổi bài và phát ngay lập tức", "Switch and play immediately")}</small></span><select aria-label={tx("Bài nhạc","Music track")} value={preferredMusic} onChange={(event) => void changeMusic(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map((track)=><option key={track.id} value={track.id}>{track.title}</option>)}</select></label>
+    </div>
+  </section></div>;
 }

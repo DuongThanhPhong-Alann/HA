@@ -10,6 +10,7 @@ import { formatVietnamDateTime } from "@/lib/date-time";
 import type { Measurement } from "@/types/database";
 import { text, type AppLocale } from "@/lib/i18n";
 import { CategoryBadge } from "./CategoryBadge";
+import { DeleteConfirmationDialog } from "@/components/ui/DeleteConfirmationDialog";
 
 const severityStyles = {
   info: "history-card--info",
@@ -28,10 +29,12 @@ export function MeasurementList({ initial, locale = "vi" }: { initial: Measureme
   ), [items, category, search]);
 
   async function remove(item: Measurement) {
-    if (!confirm(text(locale,"Xóa lần đo này?","Delete this reading?"))) return;
     const supabase = createClient();
     const { error } = await supabase.from("blood_pressure_records").delete().eq("id", item.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
     if (item.image_path) await supabase.storage.from("bp-images").remove([item.image_path]);
     setItems((current) => current.filter((value) => value.id !== item.id));
     toast.success(text(locale,"Đã xóa lần đo","Reading deleted"));
@@ -81,7 +84,7 @@ export function MeasurementList({ initial, locale = "vi" }: { initial: Measureme
           <div className="history-note-wrap"><span><Stethoscope size={15}/></span>{item.note ? <p className="history-note">“{item.note}”</p> : <p className="history-note history-note--empty">{text(locale,"Không có ghi chú cho lần đo này","No clinical note for this reading")}</p>}</div>
           <div className="flex shrink-0 gap-2">
             <Link href={`/measurements/${item.id}`} className="history-detail-link">{text(locale,"Xem hồ sơ","View record")}<ChevronRight size={17}/></Link>
-            <button type="button" aria-label={`Xóa lần đo lúc ${formatVietnamDateTime(item.measured_at)}`} className="history-delete" onClick={() => remove(item)}><Trash2 size={17}/></button>
+            <DeleteConfirmationDialog locale={locale} ariaLabel={`${text(locale,"Xóa lần đo lúc","Delete reading at")} ${formatVietnamDateTime(item.measured_at)}`} triggerClassName="history-delete" triggerLabel={<Trash2 size={17}/>} onConfirm={() => remove(item)}/>
           </div>
         </div>
       </article>;
