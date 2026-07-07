@@ -8,6 +8,7 @@ import { text } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 import { BackgroundMusic, MusicControl, type MusicTrackId } from "./BackgroundMusic";
 import { LogoutButton } from "./LogoutButton";
+import { AppNavLink } from "./AppNavLink";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const cookieLocale = await getLocale();
@@ -39,7 +40,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <span className="rounded-xl border border-white/15 bg-white/10 p-2 text-emerald-100 shadow-[0_0_24px_rgba(110,231,183,.2)]"><HeartPulse /></span>
         <span>BP Tracker</span><Leaf size={16} className="ml-auto text-emerald-200" />
       </Link>
-      <nav className="relative space-y-2">{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex items-center gap-3 rounded-xl px-3 py-3 text-emerald-50/75 transition hover:bg-white/10 hover:text-white"><Icon size={20} />{label}</Link>)}</nav>
+      <nav className="relative space-y-2">{nav.map(({ href, label, icon: Icon }) => <AppNavLink key={href} href={href} className="flex items-center gap-3 rounded-xl px-3 py-3 text-emerald-50/75 transition hover:bg-white/10 hover:text-white"><Icon size={20} />{label}</AppNavLink>)}</nav>
       <div className="relative mt-auto border-t border-white/10 pt-4">
         <Link href="/profile" className="mb-2 flex min-w-0 items-center gap-3 rounded-xl bg-white/5 p-3 transition hover:bg-white/10">
           <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">{avatarSrc ? <Image src={avatarSrc} alt="Avatar" fill unoptimized className="object-cover" sizes="40px" /> : <UserRound size={19} />}</span>
@@ -49,6 +50,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </aside>
     <main className="app-stage min-w-0 w-full pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
-    <nav className="wellness-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-emerald-50/75 transition hover:text-white">{href === "/profile" && avatarSrc ? <span className="relative h-[19px] w-[19px] shrink-0 overflow-hidden rounded-full ring-1 ring-white/30"><Image src={avatarSrc} alt="" fill unoptimized className="object-cover" sizes="19px" /></span> : <Icon className="shrink-0" size={19} />}<span className="line-clamp-1 w-full">{label}</span></Link>)}{user && <MusicControl userId={user.id} locale={locale} mobile/>}<LogoutButton mobile locale={locale} /></nav>
+    <nav className="wellness-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <AppNavLink key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-emerald-50/75 transition hover:text-white">{href === "/profile" && avatarSrc ? <span className="relative h-[19px] w-[19px] shrink-0 overflow-hidden rounded-full ring-1 ring-white/30"><Image src={avatarSrc} alt="" fill unoptimized className="object-cover" sizes="19px" /></span> : <Icon className="shrink-0" size={19} />}<span className="line-clamp-1 w-full">{label}</span></AppNavLink>)}{user && <MusicControl userId={user.id} locale={locale} mobile/>}<LogoutButton mobile locale={locale} /></nav>
   </div>;
 }

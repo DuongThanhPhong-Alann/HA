@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import { Toaster } from "sonner";
+import { GlobalEffects } from "@/components/layout/GlobalEffects";
 
 import "./globals.css";
 
@@ -17,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="vi" data-scroll-behavior="smooth"><body className={beVietnamPro.variable}>{children}<Toaster richColors position="top-center"/></body></html>;
+  return <html lang="vi" data-scroll-behavior="smooth"><body className={beVietnamPro.variable}><GlobalEffects/>{children}<Toaster richColors position="top-center"/></body></html>;
 }

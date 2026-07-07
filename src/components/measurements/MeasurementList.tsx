@@ -41,7 +41,7 @@ export function MeasurementList({ initial, locale = "vi" }: { initial: Measureme
   }
 
   return <>
-    <div className="card mb-5 flex flex-col gap-3 p-3 sm:flex-row sm:p-4">
+    <div className="card history-filter-console mb-5 flex flex-col gap-3 p-3 sm:flex-row sm:p-4">
       <label className="relative min-w-0 flex-1"><Search className="absolute left-3 top-3 text-slate-400" size={20}/><input className="input pl-10" placeholder={text(locale,"Tìm theo ghi chú...","Search clinical notes...")} value={search} onChange={(event) => setSearch(event.target.value)}/></label>
       <select aria-label={text(locale,"Lọc theo phân loại","Filter by classification")} className="input min-w-0 sm:w-64" value={category} onChange={(event) => setCategory(event.target.value)}><option value="ALL">{text(locale,"Tất cả phân loại","All classifications")}</option><option value="NORMAL">{text(locale,"Bình thường","Normal blood pressure")}</option><option value="ELEVATED">{text(locale,"Hơi cao","Elevated blood pressure")}</option><option value="HYPERTENSION_STAGE_1">{text(locale,"Tăng huyết áp mức 1","Stage 1 hypertension")}</option><option value="HYPERTENSION_STAGE_2">{text(locale,"Tăng huyết áp mức 2","Stage 2 hypertension")}</option><option value="HYPERTENSIVE_CRISIS">{text(locale,"Cảnh báo rất cao","Hypertensive crisis")}</option><option value="LOW">{text(locale,"Huyết áp thấp","Hypotension")}</option></select>
     </div>
