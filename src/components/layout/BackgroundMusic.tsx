@@ -35,7 +35,6 @@ const getPlayer = () => {
 
 export function BackgroundMusic({ preferredTrack, locale = "vi" }: { preferredTrack: MusicTrackId; locale?: AppLocale }) {
   const [isPlaying, setIsPlaying] = useState(() => Boolean(player && !player.paused));
-  const [trackTitle, setTrackTitle] = useState(MUSIC_TRACKS[activeTrack].title);
 
   useEffect(() => {
     const audio = getPlayer();
@@ -46,7 +45,6 @@ export function BackgroundMusic({ preferredTrack, locale = "vi" }: { preferredTr
     const play = () => audio.play().catch(() => undefined);
     const loadTrack = (index: number) => {
       activeTrack = index;
-      setTrackTitle(MUSIC_TRACKS[activeTrack].title);
       audio.src = MUSIC_TRACKS[activeTrack].src;
       audio.load();
       void play();
@@ -110,9 +108,9 @@ export function BackgroundMusic({ preferredTrack, locale = "vi" }: { preferredTr
     }
   };
 
-  return <button type="button" className={`music-control ${isPlaying ? "music-control--playing" : ""}`} aria-label={isPlaying ? text(locale,"Dừng nhạc","Pause music") : text(locale,"Phát nhạc","Play music")} onClick={togglePlayback}>
-    <span className="music-control__icon"><Music2 size={17}/><i/><i/><i/></span>
-    <span className="music-control__copy"><b>{trackTitle}</b><small>{isPlaying ? text(locale,"Đang phát · Nhấn để dừng","Playing · Tap to pause") : text(locale,"Đã dừng · Nhấn để phát","Paused · Tap to play")}</small></span>
-    <span className="music-control__action">{isPlaying ? <Pause size={16}/> : <Play size={16}/>}</span>
+  return <button type="button" className={`music-control ${isPlaying ? "music-control--playing" : ""}`} aria-label={isPlaying ? text(locale,"Dừng nhạc","Pause music") : text(locale,"Phát nhạc","Play music")} title={isPlaying ? text(locale,"Dừng nhạc","Pause music") : text(locale,"Phát nhạc","Play music")} onClick={togglePlayback}>
+    <Music2 className="music-control__note" size={19}/>
+    <span className="music-control__state">{isPlaying ? <Pause size={12}/> : <Play size={12}/>}</span>
+    {isPlaying && <span className="music-control__pulse" aria-hidden="true"><i/><i/><i/></span>}
   </button>;
 }

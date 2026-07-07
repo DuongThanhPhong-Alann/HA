@@ -564,20 +564,14 @@ body { background: radial-gradient(circle at 88% 5%,rgba(134,239,172,.2),transpa
 @keyframes dialog-fade { from { opacity: 0; } }
 @keyframes dialog-rise { from { opacity: 0; transform: translateY(14px) scale(.97); } }
 
-.music-control { position: fixed; z-index: 45; right: 1.1rem; bottom: 1.1rem; display: flex; max-width: min(21rem,calc(100vw - 2rem)); min-height: 3.25rem; cursor: pointer; align-items: center; gap: .7rem; border: 1px solid rgba(255,255,255,.86); border-radius: 1rem; padding: .55rem .65rem; color: #eafff5; background: linear-gradient(135deg,rgba(6,95,70,.96),rgba(13,116,104,.96)); box-shadow: 0 15px 38px rgba(3,64,49,.3),inset 0 1px rgba(255,255,255,.16); backdrop-filter: blur(14px); transition: transform .2s ease,box-shadow .2s ease; }
+.music-control { position: fixed; z-index: 45; right: 1.1rem; bottom: 1.1rem; display: grid; width: 3rem; height: 3rem; cursor: pointer; place-items: center; border: 1px solid rgba(255,255,255,.86); border-radius: .9rem; padding: 0; color: #eafff5; background: linear-gradient(135deg,rgba(6,95,70,.96),rgba(13,116,104,.96)); box-shadow: 0 12px 30px rgba(3,64,49,.3),inset 0 1px rgba(255,255,255,.16); backdrop-filter: blur(14px); transition: transform .2s ease,box-shadow .2s ease; }
 .music-control:hover { transform: translateY(-2px); box-shadow: 0 20px 45px rgba(3,64,49,.36),0 0 24px rgba(52,211,153,.12); }
-.music-control__icon { position: relative; display: grid; width: 2.2rem; height: 2.2rem; flex: none; place-items: center; border-radius: .7rem; color: #d1fae5; background: rgba(255,255,255,.1); }
-.music-control__icon i { position: absolute; bottom: .28rem; width: 2px; height: .3rem; border-radius: 2px; background: #a7f3d0; opacity: 0; }
-.music-control__icon i:nth-of-type(1) { right: .28rem; }
-.music-control__icon i:nth-of-type(2) { right: .48rem; height: .5rem; }
-.music-control__icon i:nth-of-type(3) { right: .68rem; height: .22rem; }
-.music-control--playing .music-control__icon i { opacity: .9; animation: signal-bars .7s ease-in-out infinite alternate; }
-.music-control--playing .music-control__icon i:nth-of-type(2) { animation-delay: -.35s; }
-.music-control--playing .music-control__icon i:nth-of-type(3) { animation-delay: -.55s; }
-.music-control__copy { min-width: 0; text-align: left; }
-.music-control__copy b { display: block; overflow: hidden; font-size: .68rem; line-height: 1rem; text-overflow: ellipsis; white-space: nowrap; }
-.music-control__copy small { display: block; color: rgba(209,250,229,.62); font-size: .52rem; line-height: .8rem; white-space: nowrap; }
-.music-control__action { display: grid; width: 1.85rem; height: 1.85rem; flex: none; place-items: center; border-radius: 50%; color: #065f46; background: #d1fae5; }
+.music-control__note { color: #d1fae5; }
+.music-control__state { position: absolute; right: .22rem; bottom: .22rem; display: grid; width: 1.05rem; height: 1.05rem; place-items: center; border-radius: 50%; color: #065f46; background: #d1fae5; box-shadow: 0 2px 6px rgba(3,64,49,.28); }
+.music-control__pulse { position: absolute; left: .25rem; bottom: .28rem; display: flex; height: .65rem; align-items: end; gap: 2px; }
+.music-control__pulse i { width: 2px; height: 35%; border-radius: 2px; background: #a7f3d0; animation: signal-bars .65s ease-in-out infinite alternate; }
+.music-control__pulse i:nth-child(2) { height: 85%; animation-delay: -.3s; }
+.music-control__pulse i:nth-child(3) { height: 55%; animation-delay: -.5s; }
 
 @keyframes monitor-live { 70% { box-shadow: 0 0 0 8px transparent; } }
 @keyframes signal-bars { to { height: 20%; opacity: .35; } }
@@ -820,7 +814,6 @@ body { background: radial-gradient(circle at 88% 5%,rgba(134,239,172,.2),transpa
   .detail-head-ecg { width: 78%; opacity: .16; }
   .detail-assessment { align-items: flex-start; }
   .auth-medical-ecg span { display: none; }
-  .music-control { right: .65rem; bottom: calc(5.25rem + env(safe-area-inset-bottom)); max-width: calc(100vw - 1.3rem); min-height: 2.9rem; }
-  .music-control__copy small { display: none; }
+  .music-control { right: .65rem; bottom: calc(5.25rem + env(safe-area-inset-bottom)); width: 2.8rem; height: 2.8rem; }
 }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto!important; animation-duration: .01ms!important; animation-iteration-count: 1!important; transition-duration: .01ms!important; } }

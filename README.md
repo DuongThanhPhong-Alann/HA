@@ -21,6 +21,7 @@ Theo dõi HA
 supabase secrets set RESEND_API_KEY=re_xxx
 supabase secrets set REPORT_EMAIL_FROM="Blood Pressure Tracker <reports@your-domain.com>"
 supabase secrets set REPORT_CRON_SECRET=mot-chuoi-ngau-nhien-rat-dai
+supabase secrets set PUBLIC_APP_URL=https://ten-du-an.vercel.app
 ```
 
 4. Deploy function:
@@ -31,7 +32,7 @@ supabase functions deploy send-health-reports --project-ref zooyuuzvnpdksvqctnra
 
 5. Thay placeholder trong `supabase/report-schedule.sql`, bảo đảm `report_cron_secret` trùng với secret ở bước 3, rồi chạy file trong SQL Editor.
 
-Cron chạy hằng ngày lúc 01:00 UTC (08:00 giờ Việt Nam). Function chỉ gửi báo cáo tuần vào thứ Hai và báo cáo tháng vào ngày 1, đồng thời dùng bảng `report_deliveries` để chống gửi trùng.
+Cron chạy hằng ngày lúc 01:00 UTC (08:00 giờ Việt Nam). Function chỉ gửi báo cáo tuần vào thứ Hai và báo cáo tháng vào ngày 1, đồng thời dùng bảng `report_deliveries` để chống gửi trùng. Email sử dụng ngôn ngữ đã chọn trong Hồ sơ, có bảng đầy đủ các lần đo, chỉ số tổng hợp, MAP, hiệu áp, phân bố phân loại và bản text dự phòng.
 
 ## Deploy web lên Vercel
 
