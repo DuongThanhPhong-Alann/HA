@@ -1,6 +1,6 @@
 "use client";
 
-import { AudioLines, BellRing, Camera, Check, HeartPulse, Images, Languages, Music2, Save, ShieldCheck, UserRound } from "lucide-react";
+import { BellRing, Camera, Check, Images, Languages, Save, ShieldCheck, UserRound } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import { persistLocale, text, type AppLocale } from "@/lib/i18n";
-import { MUSIC_TRACKS, persistMusicPreference, type MusicTrackId } from "@/components/layout/BackgroundMusic";
 import type { Profile } from "@/types/database";
 
 const avatarPresets = Array.from({ length: 60 }, (_, index) => `avatar-${String(index + 1).padStart(2, "0")}`);
@@ -22,7 +21,6 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [customPreview, setCustomPreview] = useState<string | null>(profile?.avatar_path ? avatarUrl : null);
   const [language, setLanguage] = useState<AppLocale>(profile?.language ?? initialLocale);
-  const [preferredMusic, setPreferredMusic] = useState<MusicTrackId>(profile?.preferred_music ?? "salt_and_bamboo");
   const currentAvatar = avatarPreset ? presetUrl(avatarPreset) : customPreview;
   const tx = (vi: string, en: string) => text(language, vi, en);
 
@@ -44,14 +42,6 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
     setAvatarFile(file);
     setAvatarPreset(null);
     setCustomPreview(URL.createObjectURL(file));
-  };
-
-  const changeMusic = async (next: MusicTrackId) => {
-    setPreferredMusic(next);
-    persistMusicPreference(next);
-    const { error } = await createClient().from("profiles").update({ preferred_music: next }).eq("id", user.id);
-    if (error) toast.warning(tx("Đã đổi nhạc trên thiết bị này; cần chạy migration để đồng bộ tài khoản.", "Music changed on this device; apply the migration for account sync."));
-    else toast.success(tx("Đã đổi bài nhạc", "Music changed"));
   };
 
   const changeLanguage = async (next: AppLocale) => {
@@ -147,14 +137,11 @@ export function ProfileForm({ profile, avatarUrl, user, initialLocale = "vi" }: 
   </form>
   <section className="card preference-console overflow-hidden">
     <div className="preference-console__head">
-      <span className="preference-console__heart"><HeartPulse size={21}/></span>
-      <div><p className="eyebrow">{tx("TRẠM CÁ NHÂN HÓA", "PERSONALIZATION STATION")}</p><h2 className="mt-1 font-black">{tx("Ngôn ngữ và liệu pháp âm thanh", "Language and ambient sound")}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{tx("Mọi thay đổi được áp dụng ngay, không cần nhấn lưu.", "Changes take effect immediately; no save action is required.")}</p></div>
-      <AudioLines className="ml-auto hidden text-violet-400 sm:block" size={28}/>
+      <span className="preference-console__heart"><Languages size={21}/></span>
+      <div><p className="eyebrow">{tx("NGÔN NGỮ", "LANGUAGE")}</p><h2 className="mt-1 font-black">{tx("Ngôn ngữ y khoa", "Clinical language")}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{tx("Thay đổi được áp dụng ngay, không cần nhấn lưu.", "Changes take effect immediately; no save action is required.")}</p></div>
     </div>
-    <div className="preference-wave" aria-hidden="true">{Array.from({length:24},(_,index)=><i key={index} style={{animationDelay:`-${index * 70}ms`}}/>)}</div>
-    <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+    <div className="p-4 sm:p-5">
       <label className="preference-option"><span className="preference-option__icon preference-option__icon--language"><Languages size={20}/></span><span className="min-w-0 flex-1"><b className="block text-sm">{tx("Ngôn ngữ y khoa", "Clinical language")}</b><small className="text-slate-500">{tx("Thuật ngữ chuyên môn nhất quán", "Consistent professional terminology")}</small></span><select aria-label={tx("Ngôn ngữ","Language")} value={language} onChange={(event) => void changeLanguage(event.target.value as AppLocale)}><option value="vi">Tiếng Việt</option><option value="en">English · Clinical</option></select></label>
-      <label className="preference-option"><span className="preference-option__icon preference-option__icon--music"><Music2 size={20}/></span><span className="min-w-0 flex-1"><b className="block text-sm">{tx("Âm nhạc thư giãn", "Ambient music")}</b><small className="text-slate-500">{tx("Đổi bài và phát ngay lập tức", "Switch and play immediately")}</small></span><select aria-label={tx("Bài nhạc","Music track")} value={preferredMusic} onChange={(event) => void changeMusic(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map((track)=><option key={track.id} value={track.id}>{track.title}</option>)}</select></label>
     </div>
   </section></div>;
 }

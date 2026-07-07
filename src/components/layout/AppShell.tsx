@@ -6,7 +6,7 @@ import { IdleLogout } from "@/components/auth/IdleLogout";
 import { createClient } from "@/lib/supabase/server";
 import { text } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
-import { BackgroundMusic, type MusicTrackId } from "./BackgroundMusic";
+import { BackgroundMusic, MusicControl, type MusicTrackId } from "./BackgroundMusic";
 import { LogoutButton } from "./LogoutButton";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -31,9 +31,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return <div className="app-wellness min-h-dvh w-full md:grid md:grid-cols-[250px_minmax(0,1fr)]">
     {user && <IdleLogout userId={user.id} locale={locale} />}
-    {user && <BackgroundMusic preferredTrack={profile?.preferred_music ?? "salt_and_bamboo"} locale={locale} />}
+    {user && <BackgroundMusic preferredTrack={profile?.preferred_music ?? "salt_and_bamboo"} />}
     <div className="wellness-nature" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <span key={index} className={`nature-leaf nature-leaf--${index + 1}`} />)}</div>
-    <aside className="wellness-sidebar relative hidden overflow-hidden p-6 text-white md:flex md:flex-col">
+    <aside className="wellness-sidebar relative hidden overflow-visible p-6 text-white md:flex md:flex-col">
       <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-emerald-300/15 blur-2xl" />
       <Link href="/dashboard" className="relative mb-10 flex items-center gap-3 font-extrabold">
         <span className="rounded-xl border border-white/15 bg-white/10 p-2 text-emerald-100 shadow-[0_0_24px_rgba(110,231,183,.2)]"><HeartPulse /></span>
@@ -45,10 +45,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">{avatarSrc ? <Image src={avatarSrc} alt="Avatar" fill unoptimized className="object-cover" sizes="40px" /> : <UserRound size={19} />}</span>
           <span className="min-w-0"><b className="block truncate text-xs">{profile?.full_name || text(locale, "Hồ sơ của tôi", "My profile")}</b><small className="block truncate text-[10px] text-emerald-50/50">{user?.email}</small></span>
         </Link>
-        <div className="[&_button]:text-emerald-50/70 [&_button:hover]:bg-white/10 [&_button:hover]:text-white"><LogoutButton locale={locale} /></div>
+        <div className="space-y-1 [&_button]:text-emerald-50/70 [&_button:hover]:bg-white/10 [&_button:hover]:text-white">{user && <MusicControl userId={user.id} locale={locale}/>}<LogoutButton locale={locale} /></div>
       </div>
     </aside>
     <main className="app-stage min-w-0 w-full pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
-    <nav className="wellness-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-emerald-50/75 transition hover:text-white">{href === "/profile" && avatarSrc ? <span className="relative h-[19px] w-[19px] shrink-0 overflow-hidden rounded-full ring-1 ring-white/30"><Image src={avatarSrc} alt="" fill unoptimized className="object-cover" sizes="19px" /></span> : <Icon className="shrink-0" size={19} />}<span className="line-clamp-1 w-full">{label}</span></Link>)}<LogoutButton mobile locale={locale} /></nav>
+    <nav className="wellness-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-emerald-50/75 transition hover:text-white">{href === "/profile" && avatarSrc ? <span className="relative h-[19px] w-[19px] shrink-0 overflow-hidden rounded-full ring-1 ring-white/30"><Image src={avatarSrc} alt="" fill unoptimized className="object-cover" sizes="19px" /></span> : <Icon className="shrink-0" size={19} />}<span className="line-clamp-1 w-full">{label}</span></Link>)}{user && <MusicControl userId={user.id} locale={locale} mobile/>}<LogoutButton mobile locale={locale} /></nav>
   </div>;
 }
