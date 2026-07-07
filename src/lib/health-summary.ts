@@ -20,6 +20,7 @@ export type PeriodHealthSummary = {
   ranges: Record<Metric, { min: number; max: number }>;
   variability: Record<Metric, number>;
   highRiskCount: number;
+  categoryCounts: Record<BloodPressureCategory, number>;
   worstCategory: BloodPressureCategory;
   severity: BloodPressureSeverity;
   title: string;
@@ -58,6 +59,12 @@ export function summarizeMeasurements(records: Measurement[], locale: AppLocale 
       Math.round(deviation(values(metric)) * 10) / 10,
     ]),
   ) as PeriodHealthSummary["variability"];
+  const categoryCounts = Object.fromEntries(
+    riskOrder.map((category) => [
+      category,
+      ordered.filter((record) => record.category === category).length,
+    ]),
+  ) as Record<BloodPressureCategory, number>;
 
   const worstCategory = ordered.reduce<BloodPressureCategory>(
     (worst, record) => riskOrder.indexOf(record.category) > riskOrder.indexOf(worst) ? record.category : worst,
@@ -104,6 +111,7 @@ export function summarizeMeasurements(records: Measurement[], locale: AppLocale 
     ranges,
     variability,
     highRiskCount: ordered.filter((record) => ["danger", "emergency"].includes(record.severity)).length,
+    categoryCounts,
     worstCategory: finalCategory,
     severity: finalClassification?.severity ?? averageClassification.severity,
     title: categoryLabels[finalCategory],

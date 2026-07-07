@@ -26,6 +26,15 @@ export default async function MeasurementDetailPage({ params }: { params: Promis
     imageUrl = signed?.signedUrl ?? null;
   }
   const crisis = record.category === "HYPERTENSIVE_CRISIS";
+  const assessmentTone = record.category === "LOW"
+    ? "detail-assessment--low bg-indigo-50 text-indigo-950"
+    : record.category === "NORMAL"
+      ? "detail-assessment--normal bg-emerald-50 text-emerald-950"
+      : record.category === "HYPERTENSIVE_CRISIS"
+        ? "detail-assessment--crisis bg-red-50 text-red-900"
+        : record.category === "HYPERTENSION_STAGE_2"
+          ? "detail-assessment--high bg-rose-50 text-rose-950"
+          : "bg-amber-50 text-amber-950";
   const meanArterialPressure = Math.round((record.systolic + 2 * record.diastolic) / 3);
   const pulsePressure = record.systolic - record.diastolic;
   return <AppShell><div className="mx-auto max-w-4xl p-4 sm:p-5 md:p-8">
@@ -35,7 +44,7 @@ export default async function MeasurementDetailPage({ params }: { params: Promis
       <div className="p-4 sm:p-6">
         <div className="detail-vital-grid">{[[record.systolic,"SYS",text(locale,"Tâm thu","Systolic"),"mmHg"],[record.diastolic,"DIA",text(locale,"Tâm trương","Diastolic"),"mmHg"],[record.pulse,"PULSE",text(locale,"Nhịp tim","Pulse rate"),text(locale,"lần/phút","beats/min")]].map(([value,label,name,unit],index)=><div key={label} className={`detail-vital detail-vital--${index+1}`}><span>{label}</span><b>{value}</b><small>{name} · {unit}</small><i/></div>)}</div>
         <div className="detail-derived-grid"><div><Gauge/><span>{text(locale,"MAP ước tính","Estimated MAP")}</span><b>{meanArterialPressure} <small>mmHg</small></b></div><div><Activity/><span>{text(locale,"Hiệu áp","Pulse pressure")}</span><b>{pulsePressure} <small>mmHg</small></b></div><div><HeartPulse/><span>{text(locale,"Nhịp tim","Pulse rate")}</span><b>{record.pulse} <small>{text(locale,"lần/phút","beats/min")}</small></b></div></div>
-        <div className={`detail-assessment mt-5 rounded-2xl p-4 text-sm leading-6 sm:mt-6 sm:p-5 sm:text-base sm:leading-7 ${crisis ? "detail-assessment--crisis bg-red-50 text-red-900" : "bg-amber-50 text-amber-950"}`}><span className="detail-assessment__icon"><ShieldCheck/></span><p>{locale==="en"?medicalMessagesEnglish[record.category]:record.warning_message}</p></div>
+        <div className={`detail-assessment mt-5 rounded-2xl p-4 text-sm leading-6 sm:mt-6 sm:p-5 sm:text-base sm:leading-7 ${assessmentTone}`}><span className="detail-assessment__icon"><ShieldCheck/></span><div><h2 className="mb-1 font-extrabold">{text(locale,"Đánh giá chi tiết","Detailed assessment")}</h2><p>{locale==="en"?medicalMessagesEnglish[record.category]:record.warning_message}</p></div></div>
         <div className="detail-info-panel mt-5 grid min-w-0 gap-5 sm:mt-6 md:grid-cols-2"><div className="min-w-0 space-y-4"><p className="flex min-w-0 gap-3"><span className="detail-info-icon"><Clock/></span><span className="min-w-0"><b>{text(locale,"Thời gian đo","Measurement time")}</b><br/><span className="text-sm text-slate-500 sm:text-base">{formatVietnamDateTime(record.measured_at)}</span></span></p><p className="flex min-w-0 gap-3"><span className="detail-info-icon"><StickyNote/></span><span className="min-w-0 break-words"><b>{text(locale,"Ghi chú","Clinical note")}</b><br/><span className="text-sm text-slate-500 sm:text-base">{record.note || text(locale,"Không có ghi chú","No clinical note")}</span></span></p></div>{imageUrl && <Image src={imageUrl} alt={text(locale,"Ảnh máy đo huyết áp","Blood pressure monitor image")} width={600} height={400} className="detail-monitor-image h-auto w-full rounded-2xl object-cover"/>}</div>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-7 sm:flex sm:flex-wrap"><DeleteButton id={record.id} path={record.image_path} locale={locale}/><Link href="/measurements" className="btn btn-outline">{text(locale,"Quay lại","Back")}</Link></div>
       </div>
