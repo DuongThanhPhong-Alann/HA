@@ -1,6 +1,7 @@
 import type { BloodPressureCategory, BloodPressureSeverity } from "@/lib/blood-pressure";
 import { categoryLabels, classifyBloodPressure, MEDICAL_DISCLAIMER } from "@/lib/blood-pressure";
 import type { Measurement } from "@/types/database";
+import type { AppLocale } from "@/lib/i18n";
 
 const riskOrder: BloodPressureCategory[] = [
   "NORMAL",
@@ -33,7 +34,7 @@ const deviation = (values: number[]) => {
   return Math.sqrt(mean(values.map((value) => (value - average) ** 2)));
 };
 
-export function summarizeMeasurements(records: Measurement[]): PeriodHealthSummary | null {
+export function summarizeMeasurements(records: Measurement[], locale: AppLocale = "vi"): PeriodHealthSummary | null {
   if (!records.length) return null;
 
   const ordered = [...records].sort(
@@ -86,6 +87,16 @@ export function summarizeMeasurements(records: Measurement[]): PeriodHealthSumma
   const variabilityText = variability.systolic >= 15 || variability.diastolic >= 10
     ? "Độ dao động chỉ số khá lớn; nên đo vào thời điểm cố định và trao đổi với bác sĩ nếu tiếp diễn."
     : "Độ dao động giữa các lần đo chưa ở mức nổi bật trong kỳ này.";
+  const englishTrendText = trend === "up"
+    ? "Mean systolic blood pressure shows an upward trend."
+    : trend === "down"
+      ? "Mean systolic blood pressure shows a downward trend."
+      : trend === "stable"
+        ? "Mean readings are relatively stable between the two halves of this period."
+        : "At least four readings are required for trend assessment.";
+  const englishVariabilityText = variability.systolic >= 15 || variability.diastolic >= 10
+    ? "Blood pressure variability is substantial; measure at consistent times and consult a clinician if this persists."
+    : "No substantial visit-to-visit variability is evident during this period.";
 
   return {
     count: ordered.length,
@@ -96,7 +107,7 @@ export function summarizeMeasurements(records: Measurement[]): PeriodHealthSumma
     worstCategory: finalCategory,
     severity: finalClassification?.severity ?? averageClassification.severity,
     title: categoryLabels[finalCategory],
-    assessment: `${trendText} ${variabilityText}`,
+    assessment: locale === "en" ? `${englishTrendText} ${englishVariabilityText}` : `${trendText} ${variabilityText}`,
     trend,
     disclaimer: MEDICAL_DISCLAIMER,
   };

@@ -24,3 +24,21 @@ export function classifyBloodPressure(systolic: number, diastolic: number, pulse
 }
 
 export const categoryLabels: Record<BloodPressureCategory, string> = Object.fromEntries(Object.entries(results).map(([key, value]) => [key, value.title])) as Record<BloodPressureCategory, string>;
+
+export const categoryLabelsEnglish: Record<BloodPressureCategory, string> = {
+  LOW: "Hypotension",
+  NORMAL: "Normal blood pressure",
+  ELEVATED: "Elevated blood pressure",
+  HYPERTENSION_STAGE_1: "Stage 1 hypertension",
+  HYPERTENSION_STAGE_2: "Stage 2 hypertension",
+  HYPERTENSIVE_CRISIS: "Hypertensive crisis",
+};
+
+export const medicalMessagesEnglish: Record<BloodPressureCategory, string> = {
+  LOW: "The reading is below the usual range. If you have dizziness, nausea, fatigue, blurred vision, or near-syncope, rest and consider seeking medical assessment.",
+  NORMAL: "The reading is within the normal range. Continue routine monitoring and maintain healthy lifestyle measures.",
+  ELEVATED: "Systolic blood pressure is elevated. Rest, limit sodium intake, manage stress, and continue monitoring.",
+  HYPERTENSION_STAGE_1: "The reading is within the stage 1 hypertension range. Repeat measurements on different days and consult a clinician if this pattern persists.",
+  HYPERTENSION_STAGE_2: "The reading is markedly elevated. Rest, repeat the measurement after several minutes, document the result, and contact a clinician if it remains elevated or recurs.",
+  HYPERTENSIVE_CRISIS: "The reading is in the hypertensive crisis range. Rest and repeat it after several minutes. If it remains this high, or if chest pain, dyspnea, focal weakness or numbness, visual disturbance, severe headache, speech difficulty, or dizziness occurs, seek emergency medical care immediately.",
+};

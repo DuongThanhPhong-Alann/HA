@@ -1,3 +1,4 @@
-import { categoryLabels, type BloodPressureCategory } from "@/lib/blood-pressure";
+import { categoryLabels, categoryLabelsEnglish, type BloodPressureCategory } from "@/lib/blood-pressure";
+import type { AppLocale } from "@/lib/i18n";
 const colors:Record<BloodPressureCategory,string>={NORMAL:"bg-emerald-100 text-emerald-800",ELEVATED:"bg-amber-100 text-amber-800",HYPERTENSION_STAGE_1:"bg-orange-100 text-orange-800",HYPERTENSION_STAGE_2:"bg-red-100 text-red-700",HYPERTENSIVE_CRISIS:"bg-red-700 text-white",LOW:"bg-indigo-100 text-indigo-800"};
-export function CategoryBadge({category}:{category:BloodPressureCategory}){return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${colors[category]}`}>{categoryLabels[category]}</span>}
+export function CategoryBadge({category,locale="vi"}:{category:BloodPressureCategory;locale?:AppLocale}){return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${colors[category]}`}>{locale==="en"?categoryLabelsEnglish[category]:categoryLabels[category]}</span>}
