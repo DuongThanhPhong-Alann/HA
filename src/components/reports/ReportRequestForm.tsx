@@ -58,6 +58,18 @@ const monthRange = (monthValue: string) => {
   const end = new Date(Date.UTC(year, month, 0, 12));
   return { start: `${match[1]}-${match[2]}-01`, end: end.toISOString().slice(0, 10) };
 };
+const reportErrorMessage = (locale: AppLocale, message?: string) => {
+  const normalized = message?.toLowerCase() ?? "";
+  const missingFunction = normalized.includes("failed to send a request") || normalized.includes("function was not found") || normalized.includes("not_found");
+  if (missingFunction) {
+    return text(
+      locale,
+      "Không gọi được Edge Function send-health-reports. Hãy deploy function lên Supabase rồi thử lại.",
+      "Could not reach the send-health-reports Edge Function. Deploy it to Supabase, then try again.",
+    );
+  }
+  return message || text(locale, "Không thể gửi báo cáo", "Unable to send report");
+};
 
 export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale; email?: string }) {
   const today = useMemo(() => todayInVietnam(), []);
@@ -120,7 +132,7 @@ export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale
     setBusy(false);
 
     if (error || !data?.ok) {
-      toast.error(data?.error || error?.message || tx("Không thể gửi báo cáo", "Unable to send report"));
+      toast.error(reportErrorMessage(locale, data?.error || error?.message));
       return;
     }
 
