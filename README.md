@@ -34,6 +34,18 @@ supabase functions deploy send-health-reports --project-ref zooyuuzvnpdksvqctnra
 
 Cron chạy hằng ngày lúc 01:00 UTC (08:00 giờ Việt Nam). Function chỉ gửi báo cáo tuần vào thứ Hai và báo cáo tháng vào ngày 1, đồng thời dùng bảng `report_deliveries` để chống gửi trùng. Email sử dụng ngôn ngữ đã chọn trong Hồ sơ, có bảng đầy đủ các lần đo, chỉ số tổng hợp, MAP, hiệu áp, phân bố phân loại và bản text dự phòng.
 
+## Báo cáo email theo yêu cầu
+
+Trang `/reports` cho phép người dùng đã đăng nhập gửi báo cáo ngay về email tài khoản. Các tùy chọn gồm một ngày, khoảng từ ngày đến ngày, theo tuần, theo tháng, 7 ngày gần nhất và 30 ngày gần nhất. Tính năng này dùng chung Edge Function `send-health-reports` với `mode: "manual"` và xác thực bằng session của người dùng, nên không cần đưa `REPORT_CRON_SECRET` lên frontend.
+
+Sau khi cập nhật source, deploy lại function:
+
+```bash
+supabase functions deploy send-health-reports --project-ref zooyuuzvnpdksvqctnra
+```
+
+Mọi email báo cáo, gồm báo cáo tự động và báo cáo theo yêu cầu, đều có câu “Thông tin mang tính tham khảo. Nếu có triệu chứng bất thường, hãy liên hệ bác sĩ hoặc cơ sở y tế.” ở cuối mail.
+
 ## Deploy web lên Vercel
 
 File `.env` chỉ dùng trên máy local và đã được `.gitignore` loại khỏi Git. `.env.example` chỉ giữ tên biến, không chứa giá trị thật.

@@ -1,4 +1,4 @@
-import { CirclePlus, HeartPulse, History, LayoutDashboard, Leaf, UserRound } from "lucide-react";
+import { CirclePlus, FileText, HeartPulse, History, LayoutDashboard, Leaf, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -21,6 +21,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     { href: "/dashboard", label: text(locale, "Tổng quan", "Dashboard"), icon: LayoutDashboard },
     { href: "/measurements/new", label: text(locale, "Thêm lần đo", "New reading"), icon: CirclePlus },
     { href: "/measurements", label: text(locale, "Lịch sử", "History"), icon: History },
+    { href: "/reports", label: text(locale, "Báo cáo", "Reports"), icon: FileText },
     { href: "/profile", label: text(locale, "Hồ sơ", "Profile"), icon: UserRound },
   ];
   let avatarSrc: string | null = profile?.avatar_preset ? `/avatars/presets/${profile.avatar_preset}.webp` : null;
@@ -50,6 +51,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     </aside>
     <main className="app-stage min-w-0 w-full pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
-    <nav className="wellness-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <AppNavLink key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-emerald-50/75 transition hover:text-white">{href === "/profile" && avatarSrc ? <span className="relative h-[19px] w-[19px] shrink-0 overflow-hidden rounded-full ring-1 ring-white/30"><Image src={avatarSrc} alt="" fill unoptimized className="object-cover" sizes="19px" /></span> : <Icon className="shrink-0" size={19} />}<span className="line-clamp-1 w-full">{label}</span></AppNavLink>)}{user && <MusicControl userId={user.id} locale={locale} mobile/>}<LogoutButton mobile locale={locale} /></nav>
+    <nav className="wellness-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">{nav.map(({ href, label, icon: Icon }) => <AppNavLink key={href} href={href} className="flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2.5 text-center text-[9px] leading-tight text-emerald-50/75 transition hover:text-white">{href === "/profile" && avatarSrc ? <span className="relative h-[19px] w-[19px] shrink-0 overflow-hidden rounded-full ring-1 ring-white/30"><Image src={avatarSrc} alt="" fill unoptimized className="object-cover" sizes="19px" /></span> : <Icon className="shrink-0" size={19} />}<span className="line-clamp-1 w-full">{label}</span></AppNavLink>)}{user && <MusicControl userId={user.id} locale={locale} mobile/>}<LogoutButton mobile locale={locale} /></nav>
   </div>;
 }
