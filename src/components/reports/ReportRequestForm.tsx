@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type ReportKind = "single-day" | "custom" | "week" | "month" | "last-7-days" | "last-30-days";
 type SentResult = { recipient: string; records: number; period: { start: string; end: string } };
+type FunctionError = Error & { context?: unknown };
 
 const dateFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Ho_Chi_Minh",
@@ -58,15 +59,54 @@ const monthRange = (monthValue: string) => {
   const end = new Date(Date.UTC(year, month, 0, 12));
   return { start: `${match[1]}-${match[2]}-01`, end: end.toISOString().slice(0, 10) };
 };
+async function readFunctionError(error: unknown) {
+  const functionError = error as FunctionError;
+  const context = functionError?.context;
+  if (context instanceof Response) {
+    const copy = context.clone();
+    try {
+      const body = await copy.json();
+      if (body && typeof body === "object") {
+        const detail = body as { error?: unknown; message?: unknown; code?: unknown };
+        return String(detail.error || detail.message || detail.code || functionError.message || "");
+      }
+    } catch {
+      try {
+        const body = await context.clone().text();
+        if (body) return body;
+      } catch {
+        return functionError.message;
+      }
+    }
+  }
+  return functionError?.message;
+}
+
 const reportErrorMessage = (locale: AppLocale, message?: string) => {
   const normalized = message?.toLowerCase() ?? "";
   const missingFunction = normalized.includes("failed to send a request") || normalized.includes("function was not found") || normalized.includes("not_found");
+  const missingSecrets = normalized.includes("missing resend_api_key") || normalized.includes("missing resend_api_key or report_email_from");
+  const unauthorized = normalized.includes("phiên đăng nhập") || normalized.includes("đăng nhập") || normalized.includes("unauthorized") || normalized.includes("jwt");
+  const resendRejected = normalized.includes("resend") || normalized.includes("domain") || normalized.includes("from");
   if (missingFunction) {
     return text(
       locale,
       "Không gọi được Edge Function send-health-reports. Hãy deploy function lên Supabase rồi thử lại.",
       "Could not reach the send-health-reports Edge Function. Deploy it to Supabase, then try again.",
     );
+  }
+  if (missingSecrets) {
+    return text(
+      locale,
+      "Edge Function thiếu RESEND_API_KEY hoặc REPORT_EMAIL_FROM. Hãy set Supabase secrets rồi deploy lại function.",
+      "The Edge Function is missing RESEND_API_KEY or REPORT_EMAIL_FROM. Set Supabase secrets, then redeploy the function.",
+    );
+  }
+  if (unauthorized) {
+    return text(locale, "Phiên đăng nhập không hợp lệ. Hãy đăng xuất, đăng nhập lại rồi gửi lại báo cáo.", "Your session is invalid. Sign out, sign in again, then resend the report.");
+  }
+  if (resendRejected) {
+    return `${text(locale, "Resend từ chối gửi email. Kiểm tra API key, domain/email gửi đã xác minh.", "Resend rejected the email. Check the API key and verified sender domain/email.")} ${message ?? ""}`.trim();
   }
   return message || text(locale, "Không thể gửi báo cáo", "Unable to send report");
 };
@@ -132,7 +172,8 @@ export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale
     setBusy(false);
 
     if (error || !data?.ok) {
-      toast.error(reportErrorMessage(locale, data?.error || error?.message));
+      const detail = data?.error || await readFunctionError(error);
+      toast.error(reportErrorMessage(locale, detail));
       return;
     }
 
