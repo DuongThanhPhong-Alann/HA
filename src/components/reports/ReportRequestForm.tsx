@@ -1,14 +1,15 @@
 "use client";
 
-import { Calendar, CalendarDays, CalendarRange, Clock3, FileText, MailCheck, Send, Sparkles } from "lucide-react";
+import { Calendar, CalendarDays, CalendarRange, CheckCircle2, Clock3, FileText, MailCheck, Send, Sparkles, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { text, type AppLocale } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
+import type { ReportDelivery } from "@/types/database";
 
 type ReportKind = "single-day" | "custom" | "week" | "month" | "last-7-days" | "last-30-days";
-type SentResult = { recipient: string; records: number; period: { start: string; end: string } };
+type SentResult = { recipient: string; records: number; period: { start: string; end: string }; providerMessageId?: string | null; delivery?: { id: string; created_at: string; sent_at?: string | null } };
 type FunctionError = Error & { context?: unknown };
 
 const dateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -26,6 +27,10 @@ const addDays = (date: string, days: number) => {
   return value.toISOString().slice(0, 10);
 };
 const formatDate = (date: string) => date.split("-").reverse().join("/");
+const formatDateTime = (date: string | null) => {
+  if (!date) return "-";
+  return new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(date));
+};
 const isDateOnly = (date: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
   const parsed = toNoonUtc(date);
@@ -111,7 +116,7 @@ const reportErrorMessage = (locale: AppLocale, message?: string) => {
   return message || text(locale, "Không thể gửi báo cáo", "Unable to send report");
 };
 
-export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale; email?: string }) {
+export function ReportRequestForm({ locale = "vi", email, initialDeliveries = [] }: { locale?: AppLocale; email?: string; initialDeliveries?: ReportDelivery[] }) {
   const today = useMemo(() => todayInVietnam(), []);
   const [kind, setKind] = useState<ReportKind>("custom");
   const [singleDate, setSingleDate] = useState(today);
@@ -121,6 +126,7 @@ export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale
   const [month, setMonth] = useState(today.slice(0, 7));
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<SentResult | null>(null);
+  const [deliveries, setDeliveries] = useState(initialDeliveries);
   const tx = (vi: string, en: string) => text(locale, vi, en);
 
   const options: Array<{ value: ReportKind; label: string; icon: typeof Calendar; tone: string }> = [
@@ -143,6 +149,19 @@ export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale
 
   const range = selectedRange();
   const rangeLabel = range ? `${formatDate(range.start)} - ${formatDate(range.end)}` : tx("Chưa chọn khoảng hợp lệ", "Invalid range");
+  const kindLabels: Record<string, string> = {
+    "single-day": tx("Một ngày", "Single day"),
+    custom: tx("Tùy chọn", "Custom"),
+    week: tx("Theo tuần", "By week"),
+    month: tx("Theo tháng", "By month"),
+    "last-7-days": tx("7 ngày gần nhất", "Last 7 days"),
+    "last-30-days": tx("30 ngày gần nhất", "Last 30 days"),
+  };
+  const typeLabel = (delivery: ReportDelivery) => delivery.report_type === "weekly"
+    ? tx("Tự động tuần", "Weekly auto")
+    : delivery.report_type === "monthly"
+      ? tx("Tự động tháng", "Monthly auto")
+      : kindLabels[delivery.report_kind || "custom"] ?? tx("Thủ công", "Manual");
 
   async function submit() {
     const nextRange = selectedRange();
@@ -179,6 +198,25 @@ export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale
 
     const result = data as SentResult & { ok: true };
     setSent({ recipient: result.recipient, records: result.records, period: result.period });
+    if (result.delivery?.id) {
+      const now = new Date().toISOString();
+      const nextDelivery: ReportDelivery = {
+        id: result.delivery!.id,
+        user_id: "",
+        report_type: "manual",
+        report_kind: kind,
+        period_start: result.period.start,
+        period_end: result.period.end,
+        recipient: result.recipient,
+        provider_message_id: result.providerMessageId ?? null,
+        status: "sent",
+        error_message: null,
+        record_count: result.records,
+        created_at: result.delivery?.created_at ?? now,
+        sent_at: result.delivery?.sent_at ?? now,
+      };
+      setDeliveries((current) => [nextDelivery, ...current].slice(0, 20));
+    }
     toast.success(tx("Đã gửi báo cáo về email", "Report email sent"));
   }
 
@@ -243,6 +281,40 @@ export function ReportRequestForm({ locale = "vi", email }: { locale?: AppLocale
           <span className="mt-1 block">{tx("Số lần đo trong báo cáo", "Readings in report")}: {sent.records}</span>
         </div>
       </section>}
+
+      <section className="card overflow-hidden">
+        <div className="border-b border-slate-100 bg-white p-5">
+          <p className="eyebrow text-violet-700"><Clock3 size={15} />{tx("Lịch sử email", "Email history")}</p>
+          <h2 className="mt-1 font-black text-slate-950">{tx("Báo cáo đã gửi", "Sent reports")}</h2>
+        </div>
+        <div className="max-h-[34rem] overflow-y-auto p-3">
+          {deliveries.length ? <div className="space-y-3">{deliveries.map((delivery) => {
+            const ok = delivery.status === "sent";
+            const failed = delivery.status === "failed";
+            return <article key={delivery.id} className="rounded-2xl border border-slate-100 bg-white/90 p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <b className="block text-sm text-slate-950">{typeLabel(delivery)}</b>
+                  <span className="mt-1 block text-xs font-bold text-slate-500">{formatDate(delivery.period_start)} - {formatDate(delivery.period_end)}</span>
+                </div>
+                <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-black ${ok ? "bg-emerald-50 text-emerald-700" : failed ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
+                  {ok ? <CheckCircle2 size={13} /> : failed ? <XCircle size={13} /> : <Clock3 size={13} />}
+                  {ok ? tx("Đã gửi", "Sent") : failed ? tx("Lỗi", "Failed") : tx("Đang gửi", "Pending")}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-1 text-xs text-slate-500">
+                <span>{tx("Người nhận", "Recipient")}: <b className="text-slate-700">{delivery.recipient}</b></span>
+                <span>{tx("Số lần đo", "Readings")}: <b className="text-slate-700">{delivery.record_count}</b></span>
+                <span>{tx("Thời gian gửi", "Sent at")}: <b className="text-slate-700">{formatDateTime(delivery.sent_at || delivery.created_at)}</b></span>
+                {delivery.error_message && <span className="break-words text-rose-600">{delivery.error_message}</span>}
+              </div>
+            </article>;
+          })}</div> : <div className="grid justify-items-center gap-2 p-6 text-center text-sm text-slate-500">
+            <MailCheck className="text-slate-300" size={28} />
+            {tx("Chưa có email báo cáo nào.", "No report emails yet.")}
+          </div>}
+        </div>
+      </section>
     </aside>
   </div>;
 }

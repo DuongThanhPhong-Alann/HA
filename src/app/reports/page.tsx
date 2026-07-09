@@ -5,11 +5,17 @@ import { ReportRequestForm } from "@/components/reports/ReportRequestForm";
 import { getLocale } from "@/lib/i18n-server";
 import { text } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
+import type { ReportDelivery } from "@/types/database";
 
 export default async function ReportsPage() {
   const locale = await getLocale();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { data: deliveries } = await supabase
+    .from("report_deliveries")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   return <AppShell><div className="mx-auto max-w-6xl p-4 sm:p-5 md:p-8">
     <header className="measurement-page-heading mb-6 sm:mb-7">
@@ -23,6 +29,6 @@ export default async function ReportsPage() {
       <div className="measurement-heading-ecg" aria-hidden="true"><svg viewBox="0 0 420 36" preserveAspectRatio="none"><path d="M0 20 H95 L105 20 L113 12 L122 29 L134 3 L147 33 L158 20 H260 L270 20 L278 12 L287 29 L299 3 L312 33 L323 20 H420" /></svg></div>
     </header>
 
-    <ReportRequestForm locale={locale} email={user?.email} />
+    <ReportRequestForm locale={locale} email={user?.email} initialDeliveries={(deliveries ?? []) as ReportDelivery[]} />
   </div></AppShell>;
 }

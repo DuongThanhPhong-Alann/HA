@@ -482,8 +482,45 @@ async function runManual(request: Request) {
   const from = Deno.env.get("REPORT_EMAIL_FROM");
   const appUrl = Deno.env.get("PUBLIC_APP_URL") || "";
   if (!resendKey || !from) throw new Error("Missing RESEND_API_KEY or REPORT_EMAIL_FROM");
-  const sent = await sendReport({ supabase, profile, period, type: "manual", kind, resendKey, from, appUrl });
-  return json({ ok: true, mode: "manual", period: { start: period.start, end: period.end }, recipient: sent.recipient, records: sent.records.length, providerMessageId: sent.providerMessageId });
+  if (!profile.email) throw new Error("Profile does not have a recipient email");
+  const { data: delivery, error: deliveryError } = await supabase.from("report_deliveries").insert({
+    user_id: profile.id,
+    report_type: "manual",
+    report_kind: kind,
+    period_start: period.start,
+    period_end: period.end,
+    recipient: profile.email,
+    status: "pending",
+    record_count: 0,
+  }).select("id,created_at").single();
+  if (deliveryError) throw deliveryError;
+
+  try {
+    const sent = await sendReport({ supabase, profile, period, type: "manual", kind, resendKey, from, appUrl });
+    const patch = {
+      status: "sent",
+      provider_message_id: sent.providerMessageId,
+      sent_at: new Date().toISOString(),
+      error_message: null,
+      record_count: sent.records.length,
+    };
+    await supabase.from("report_deliveries").update(patch).eq("id", delivery.id);
+    return json({
+      ok: true,
+      mode: "manual",
+      delivery: { id: delivery.id, created_at: delivery.created_at, ...patch },
+      period: { start: period.start, end: period.end },
+      recipient: sent.recipient,
+      records: sent.records.length,
+      providerMessageId: sent.providerMessageId,
+    });
+  } catch (error) {
+    await supabase.from("report_deliveries").update({
+      status: "failed",
+      error_message: (error instanceof Error ? error.message : "Unknown error").slice(0, 1000),
+    }).eq("id", delivery.id);
+    throw error;
+  }
 }
 
 async function runScheduled(request: Request) {
@@ -521,13 +558,33 @@ async function runScheduled(request: Request) {
       }
       const { data: existing } = await supabase.from("report_deliveries").select("id,status").eq("user_id", profile.id).eq("report_type", type).eq("period_start", period.start).maybeSingle();
       if (existing?.status === "sent") continue;
-      const delivery = { user_id: profile.id, report_type: type, period_start: period.start, period_end: period.end, recipient: profile.email, status: "pending" };
-      const { data: saved, error: saveError } = await supabase.from("report_deliveries").upsert(delivery, { onConflict: "user_id,report_type,period_start" }).select("id").single();
-      if (saveError) throw saveError;
+      let saved = existing;
+      if (saved) {
+        const { error: updateError } = await supabase.from("report_deliveries").update({
+          period_end: period.end,
+          recipient: profile.email,
+          status: "pending",
+          error_message: null,
+        }).eq("id", saved.id);
+        if (updateError) throw updateError;
+      } else {
+        const { data: inserted, error: saveError } = await supabase.from("report_deliveries").insert({
+          user_id: profile.id,
+          report_type: type,
+          report_kind: null,
+          period_start: period.start,
+          period_end: period.end,
+          recipient: profile.email,
+          status: "pending",
+          record_count: 0,
+        }).select("id").single();
+        if (saveError) throw saveError;
+        saved = inserted;
+      }
       try {
         const result = await sendReport({ supabase, profile, period, type, resendKey, from, appUrl });
         sent++;
-        await supabase.from("report_deliveries").update({ status: "sent", provider_message_id: result.providerMessageId, sent_at: new Date().toISOString(), error_message: null }).eq("id", saved.id);
+        await supabase.from("report_deliveries").update({ status: "sent", provider_message_id: result.providerMessageId, sent_at: new Date().toISOString(), error_message: null, record_count: result.records.length }).eq("id", saved.id);
       } catch (error) {
         failed++;
         await supabase.from("report_deliveries").update({ status: "failed", error_message: (error instanceof Error ? error.message : "Unknown error").slice(0, 1000) }).eq("id", saved.id);
