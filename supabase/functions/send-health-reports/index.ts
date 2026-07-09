@@ -19,6 +19,8 @@ type ProfileRow = {
   full_name: string | null;
   email: string | null;
   language?: string | null;
+  avatar_preset?: string | null;
+  avatar_path?: string | null;
 };
 type Period = { start: string; end: string; next: string };
 
@@ -119,6 +121,16 @@ const isDateOnly = (value: unknown): value is string => {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 };
 const normalizeLocale = (locale: unknown): Locale => locale === "en" ? "en" : "vi";
+const initialsFor = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] ?? "B";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : "P";
+  return `${first}${last}`.toUpperCase();
+};
+const absoluteAppUrl = (appUrl: string, path: string) => {
+  if (!/^https?:\/\//.test(appUrl)) return "";
+  return `${appUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+};
 const getSecretKey = () => {
   const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (legacy) return legacy;
@@ -225,23 +237,28 @@ function metricTableRows(records: RecordRow[], locale: Locale, data: ReturnType<
   </tr>`).join("");
 }
 
-function emailHtml(name: string, type: ReportType, period: Period, records: RecordRow[], locale: Locale, appUrl: string, kind?: ManualReportKind) {
+function emailHtml(name: string, type: ReportType, period: Period, records: RecordRow[], locale: Locale, appUrl: string, kind?: ManualReportKind, avatarUrl?: string | null) {
   const data = reportData(records);
   const title = reportTitle(locale, type, kind);
   const periodLabel = `${formatDate(period.start, locale)} - ${formatDate(period.end, locale)}`;
   const status = categoryPalette[data.worst] ?? categoryPalette.NORMAL;
   const url = /^https?:\/\//.test(appUrl) ? appUrl : "";
+  const avatarAlt = esc(name);
+  const initials = esc(initialsFor(name));
+  const avatarCell = avatarUrl
+    ? `<img src="${esc(avatarUrl)}" width="72" height="72" alt="${avatarAlt}" style="display:block;width:72px;height:72px;border:3px solid rgba(255,255,255,.45);border-radius:24px;object-fit:cover;background:#ffffff;box-shadow:0 12px 28px rgba(15,23,42,.24)">`
+    : `<div style="width:72px;height:72px;border:3px solid rgba(255,255,255,.45);border-radius:24px;background:rgba(255,255,255,.16);color:#ffffff;font-size:22px;font-weight:900;line-height:72px;text-align:center;box-shadow:0 12px 28px rgba(15,23,42,.2)">${initials}</div>`;
   const detailRows = records.slice().reverse().map((record, index) => {
     const palette = categoryPalette[record.category] ?? categoryPalette.NORMAL;
     return `<tr style="background:${index % 2 ? "#f8fafc" : "#ffffff"}">
-      <td style="padding:11px 8px;border-bottom:1px solid #e2e8f0;color:#475569;font-size:11px;white-space:nowrap">${esc(formatDateTime(record.measured_at, locale))}</td>
-      <td align="center" style="padding:11px 8px;border-bottom:1px solid #e2e8f0;font-weight:900;color:#1d4ed8">${record.systolic}</td>
-      <td align="center" style="padding:11px 8px;border-bottom:1px solid #e2e8f0;font-weight:900;color:#6d28d9">${record.diastolic}</td>
-      <td align="center" style="padding:11px 8px;border-bottom:1px solid #e2e8f0;font-weight:900;color:#be185d">${record.pulse}</td>
-      <td align="center" style="padding:11px 8px;border-bottom:1px solid #e2e8f0;color:#0e7490">${estimatedMap(record)}</td>
-      <td align="center" style="padding:11px 8px;border-bottom:1px solid #e2e8f0;color:#c2410c">${pulsePressure(record)}</td>
-      <td style="padding:11px 8px;border-bottom:1px solid #e2e8f0"><span style="display:inline-block;padding:5px 8px;border:1px solid ${palette.border};border-radius:999px;background:${palette.background};color:${palette.color};font-size:11px;font-weight:900">${esc(categoryLabels[locale][record.category] ?? record.category)}</span></td>
-      <td style="padding:11px 8px;border-bottom:1px solid #e2e8f0;color:#334155;font-size:11px;line-height:1.55">${esc(readingAssessment(record, locale))}${record.note ? `<br><strong style="color:#0f172a">${tx(locale, "Ghi chú", "Note")}:</strong> ${esc(record.note)}` : ""}</td>
+      <td style="padding:13px 10px;border-bottom:1px solid #e2e8f0;color:#475569;font-size:12px;line-height:1.45;white-space:nowrap">${esc(formatDateTime(record.measured_at, locale))}</td>
+      <td align="center" style="padding:13px 9px;border-bottom:1px solid #e2e8f0;font-size:14px;font-weight:900;color:#1d4ed8">${record.systolic}</td>
+      <td align="center" style="padding:13px 9px;border-bottom:1px solid #e2e8f0;font-size:14px;font-weight:900;color:#6d28d9">${record.diastolic}</td>
+      <td align="center" style="padding:13px 9px;border-bottom:1px solid #e2e8f0;font-size:14px;font-weight:900;color:#be185d">${record.pulse}</td>
+      <td align="center" style="padding:13px 9px;border-bottom:1px solid #e2e8f0;color:#0e7490">${estimatedMap(record)}</td>
+      <td align="center" style="padding:13px 9px;border-bottom:1px solid #e2e8f0;color:#c2410c">${pulsePressure(record)}</td>
+      <td style="padding:13px 10px;border-bottom:1px solid #e2e8f0"><span style="display:inline-block;padding:6px 10px;border:1px solid ${palette.border};border-radius:999px;background:${palette.background};color:${palette.color};font-size:11px;line-height:1.35;font-weight:900">${esc(categoryLabels[locale][record.category] ?? record.category)}</span></td>
+      <td style="padding:13px 10px;border-bottom:1px solid #e2e8f0;color:#334155;font-size:12px;line-height:1.65">${esc(readingAssessment(record, locale))}${record.note ? `<br><strong style="color:#0f172a">${tx(locale, "Ghi chú", "Note")}:</strong> ${esc(record.note)}` : ""}</td>
     </tr>`;
   }).join("");
   const distributionRows = riskOrder.map((category) => {
@@ -258,12 +275,12 @@ function emailHtml(name: string, type: ReportType, period: Period, records: Reco
     </tr>`;
   }).join("");
   const content = records.length ? `
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:22px 0"><tr>
-      <td style="padding:14px;border-radius:16px;background:#eff6ff;border:1px solid #bfdbfe"><div style="font-size:10px;font-weight:900;color:#2563eb;letter-spacing:.8px">SYS AVG</div><div style="margin-top:5px;font-size:25px;font-weight:900;color:#1e3a8a">${data.systolic}<span style="font-size:11px;color:#64748b"> mmHg</span></div></td>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0"><tr>
+      <td style="padding:16px;border-radius:16px;background:#eff6ff;border:1px solid #bfdbfe"><div style="font-size:11px;font-weight:900;color:#2563eb;letter-spacing:.6px">SYS AVG</div><div style="margin-top:7px;font-size:27px;font-weight:900;color:#1e3a8a">${data.systolic}<span style="font-size:12px;color:#64748b"> mmHg</span></div></td>
       <td width="10"></td>
-      <td style="padding:14px;border-radius:16px;background:#f5f3ff;border:1px solid #ddd6fe"><div style="font-size:10px;font-weight:900;color:#7c3aed;letter-spacing:.8px">DIA AVG</div><div style="margin-top:5px;font-size:25px;font-weight:900;color:#4c1d95">${data.diastolic}<span style="font-size:11px;color:#64748b"> mmHg</span></div></td>
+      <td style="padding:16px;border-radius:16px;background:#f5f3ff;border:1px solid #ddd6fe"><div style="font-size:11px;font-weight:900;color:#7c3aed;letter-spacing:.6px">DIA AVG</div><div style="margin-top:7px;font-size:27px;font-weight:900;color:#4c1d95">${data.diastolic}<span style="font-size:12px;color:#64748b"> mmHg</span></div></td>
       <td width="10"></td>
-      <td style="padding:14px;border-radius:16px;background:#fdf2f8;border:1px solid #fbcfe8"><div style="font-size:10px;font-weight:900;color:#db2777;letter-spacing:.8px">PULSE AVG</div><div style="margin-top:5px;font-size:25px;font-weight:900;color:#831843">${data.pulse}<span style="font-size:11px;color:#64748b"> ${tx(locale, "lần/phút", "bpm")}</span></div></td>
+      <td style="padding:16px;border-radius:16px;background:#fdf2f8;border:1px solid #fbcfe8"><div style="font-size:11px;font-weight:900;color:#db2777;letter-spacing:.6px">PULSE AVG</div><div style="margin-top:7px;font-size:27px;font-weight:900;color:#831843">${data.pulse}<span style="font-size:12px;color:#64748b"> ${tx(locale, "lần/phút", "bpm")}</span></div></td>
     </tr></table>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:18px 0;border:1px solid ${status.border};border-radius:18px;background:${status.background}"><tr><td style="padding:18px;border-left:7px solid ${status.border};border-radius:18px">
       <div style="font-size:11px;font-weight:900;letter-spacing:1px;color:#64748b;text-transform:uppercase">${tx(locale, "Phân loại cao nhất ghi nhận", "Highest recorded classification")}</div>
@@ -271,24 +288,24 @@ function emailHtml(name: string, type: ReportType, period: Period, records: Reco
     </td></tr></table>
     <div style="margin-top:18px;padding:18px;border:1px solid #bae6fd;border-radius:16px;background:#f0f9ff;color:#164e63;line-height:1.7"><strong style="color:#0e7490">${tx(locale, "Đánh giá tổng quan", "Overall assessment")}:</strong> ${esc(overallAssessment(locale, records, data))}</div>
     <h2 style="margin:28px 0 10px;font-size:18px;color:#0f172a">${tx(locale, "Bảng tổng hợp chỉ số", "Clinical metric summary")}</h2>
-    <table width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;font-size:12px"><tr style="background:#0f172a;color:#ffffff"><th align="left" style="padding:11px">${tx(locale, "Mã", "Code")}</th><th align="left" style="padding:11px">${tx(locale, "Chỉ số", "Parameter")}</th><th style="padding:11px">${tx(locale, "Trung bình", "Mean")}</th><th style="padding:11px">Min</th><th style="padding:11px">Max</th><th align="left" style="padding:11px">${tx(locale, "Đơn vị", "Unit")}</th></tr>${metricTableRows(records, locale, data)}</table>
+    <table width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;font-size:12px;line-height:1.45"><tr style="background:#0f172a;color:#ffffff"><th align="left" style="padding:12px">${tx(locale, "Mã", "Code")}</th><th align="left" style="padding:12px">${tx(locale, "Chỉ số", "Parameter")}</th><th style="padding:12px">${tx(locale, "Trung bình", "Mean")}</th><th style="padding:12px">Min</th><th style="padding:12px">Max</th><th align="left" style="padding:12px">${tx(locale, "Đơn vị", "Unit")}</th></tr>${metricTableRows(records, locale, data)}</table>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px"><tr><td style="padding:14px;border-radius:14px;background:#fff7ed;color:#9a3412">${tx(locale, "Độ lệch chuẩn SYS/DIA", "SYS/DIA standard deviation")}: <strong>+/-${deviation(records, "systolic")} / +/-${deviation(records, "diastolic")} mmHg</strong></td><td width="10"></td><td style="padding:14px;border-radius:14px;background:#fff1f2;color:#9f1239">${tx(locale, "Lần đo nguy cơ cao", "High-risk readings")}: <strong>${data.dangerous}</strong></td></tr></table>
     <h2 style="margin:28px 0 10px;font-size:18px;color:#0f172a">${tx(locale, "Phân bố kết quả trong kỳ", "Reading distribution")}</h2>
     <table width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;font-size:12px"><tr style="background:#f1f5f9;color:#334155"><th align="left" style="padding:10px">${tx(locale, "Phân loại", "Classification")}</th><th style="padding:10px">${tx(locale, "Số lần", "Count")}</th><th style="padding:10px">${tx(locale, "Tỷ lệ", "Proportion")}</th></tr>${distributionRows}</table>
     <h2 style="margin:28px 0 10px;font-size:18px;color:#0f172a">${tx(locale, "Bảng chi tiết từng lần đo", "Detailed reading table")}</h2>
-    <div style="overflow-x:auto"><table width="100%" cellspacing="0" cellpadding="0" style="min-width:860px;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;font-size:12px"><tr style="background:#0f766e;color:#ffffff"><th align="left" style="padding:10px">${tx(locale, "Thời gian", "Date/time")}</th><th style="padding:10px">SYS</th><th style="padding:10px">DIA</th><th style="padding:10px">PULSE</th><th style="padding:10px">MAP</th><th style="padding:10px">PP</th><th align="left" style="padding:10px">${tx(locale, "Phân loại", "Classification")}</th><th align="left" style="padding:10px">${tx(locale, "Đánh giá từ lần đo", "Reading assessment")}</th></tr>${detailRows}</table></div>
+    <div style="overflow-x:auto"><table width="100%" cellspacing="0" cellpadding="0" style="min-width:880px;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;font-size:12px;line-height:1.5"><tr style="background:#0f766e;color:#ffffff"><th align="left" style="padding:12px">${tx(locale, "Thời gian", "Date/time")}</th><th style="padding:12px">SYS</th><th style="padding:12px">DIA</th><th style="padding:12px">PULSE</th><th style="padding:12px">MAP</th><th style="padding:12px">PP</th><th align="left" style="padding:12px">${tx(locale, "Phân loại", "Classification")}</th><th align="left" style="padding:12px">${tx(locale, "Đánh giá từ lần đo", "Reading assessment")}</th></tr>${detailRows}</table></div>
     <div style="margin-top:18px;padding:14px;border-radius:14px;background:#f8fafc;color:#64748b;font-size:11px;line-height:1.65"><strong>${tx(locale, "Giải thích thuật ngữ", "Terminology")}:</strong> SYS = ${tx(locale, "huyết áp tâm thu", "systolic blood pressure")}; DIA = ${tx(locale, "huyết áp tâm trương", "diastolic blood pressure")}; PULSE = ${tx(locale, "tần số mạch", "pulse rate")}; MAP = ${tx(locale, "huyết áp động mạch trung bình ước tính theo công thức (SYS + 2 x DIA) / 3", "estimated mean arterial pressure calculated as (SYS + 2 x DIA) / 3")}; PP = ${tx(locale, "hiệu áp (SYS - DIA)", "pulse pressure (SYS - DIA)")}.</div>` : `<div style="margin:24px 0;padding:28px;border:1px solid #dbeafe;border-radius:18px;background:#eff6ff;text-align:center;color:#475569"><strong style="display:block;color:#1d4ed8;font-size:18px">${tx(locale, "Không có lần đo trong khoảng này", "No readings in this period")}</strong><span style="display:block;margin-top:8px">${tx(locale, "Email vẫn được gửi để xác nhận khoảng báo cáo bạn đã yêu cầu.", "This email confirms the reporting period you requested.")}</span></div>
     <div style="margin-top:18px;padding:18px;border:1px solid #bae6fd;border-radius:16px;background:#f0f9ff;color:#164e63;line-height:1.7"><strong style="color:#0e7490">${tx(locale, "Đánh giá tổng quan", "Overall assessment")}:</strong> ${esc(overallAssessment(locale, records, data))}</div>`;
 
-  return `<!doctype html><html lang="${locale}"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta charset="utf-8"><title>${esc(title)}</title></head><body style="margin:0;background:#eaf2ff;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+  return `<!doctype html><html lang="${locale}"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta charset="utf-8"><title>${esc(title)}</title></head><body style="margin:0;background:#eaf2ff;font-family:Arial,Helvetica,sans-serif;color:#0f172a;-webkit-font-smoothing:antialiased">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eaf2ff;background:linear-gradient(135deg,#e0f2fe,#ecfdf5 35%,#f5f3ff 70%,#fff1f2)"><tr><td align="center" style="padding:28px 10px">
     <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;overflow:hidden;border:1px solid rgba(15,23,42,.08);border-radius:26px;background:#ffffff;box-shadow:0 22px 60px rgba(15,23,42,.18)">
-      <tr><td style="padding:30px;background:#0f766e;background:linear-gradient(135deg,#0f766e,#2563eb 42%,#7c3aed 72%,#db2777);color:#fff">
+      <tr><td style="padding:32px;background:#0f766e;background:linear-gradient(135deg,#0f766e,#2563eb 42%,#7c3aed 72%,#db2777);color:#fff">
         <table role="presentation" width="100%"><tr><td>
-          <div style="font-size:12px;font-weight:900;letter-spacing:1.7px;text-transform:uppercase;color:#d1fae5">BLOOD PRESSURE TRACKER</div>
-          <h1 style="margin:12px 0 6px;font-size:30px;line-height:1.18">${esc(title)}</h1>
-          <p style="margin:0;color:#e0f2fe;font-weight:700">${periodLabel}</p>
-        </td><td width="82" align="center"><div style="width:64px;height:64px;border:1px solid rgba(255,255,255,.3);border-radius:22px;background:rgba(255,255,255,.14);font-size:20px;font-weight:900;line-height:64px;text-align:center">BP</div></td></tr></table>
+          <div style="font-size:12px;font-weight:900;letter-spacing:1.4px;text-transform:uppercase;color:#d1fae5">BLOOD PRESSURE TRACKER</div>
+          <h1 style="margin:12px 0 8px;font-size:30px;line-height:1.22;letter-spacing:.1px">${esc(title)}</h1>
+          <p style="margin:0;color:#e0f2fe;font-size:14px;line-height:1.6;font-weight:700">${periodLabel}</p>
+        </td><td width="88" align="right">${avatarCell}</td></tr></table>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px"><tr>
           <td style="padding:12px;border-radius:14px;background:rgba(255,255,255,.13);color:#ffffff"><strong style="font-size:22px">${records.length}</strong><br><span style="font-size:11px;color:#dbeafe">${tx(locale, "lần đo", "readings")}</span></td>
           <td width="10"></td>
@@ -372,8 +389,13 @@ async function authenticateUser(request: Request) {
 }
 
 async function profileForUser(supabase: ReturnType<typeof createClient>, user: User): Promise<ProfileRow> {
-  const { data, error } = await supabase.from("profiles").select("id,full_name,email,language").eq("id", user.id).maybeSingle();
-  if (error && !/language/i.test(error.message)) throw error;
+  let { data, error } = await supabase.from("profiles").select("id,full_name,email,language,avatar_preset,avatar_path").eq("id", user.id).maybeSingle();
+  if (error && /(language|avatar_preset|avatar_path)/i.test(error.message)) {
+    const fallback = await supabase.from("profiles").select("id,full_name,email").eq("id", user.id).maybeSingle();
+    data = fallback.data ? { ...fallback.data, language: "vi", avatar_preset: null, avatar_path: null } : null;
+    error = fallback.error;
+  }
+  if (error) throw error;
   if (data) return data as ProfileRow;
   const fallbackName = typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : user.email?.split("@")[0] ?? "Người dùng";
   return { id: user.id, full_name: fallbackName, email: user.email ?? null, language: "vi" };
@@ -389,6 +411,17 @@ async function fetchRecords(supabase: ReturnType<typeof createClient>, userId: s
     .order("measured_at");
   if (error) throw error;
   return (data ?? []) as RecordRow[];
+}
+
+async function avatarUrlForProfile(supabase: ReturnType<typeof createClient>, profile: ProfileRow, appUrl: string) {
+  if (profile.avatar_preset) return absoluteAppUrl(appUrl, `/avatars/presets/${profile.avatar_preset}.webp`);
+  if (!profile.avatar_path) return null;
+  const { data, error } = await supabase.storage.from("bp-images").createSignedUrl(profile.avatar_path, 60 * 60 * 24 * 365);
+  if (error) {
+    console.error(`Unable to create avatar signed URL for ${profile.id}`, error);
+    return null;
+  }
+  return data?.signedUrl ?? null;
 }
 
 async function sendEmail(payload: { from: string; to: string; subject: string; html: string; text: string; resendKey: string }) {
@@ -425,11 +458,12 @@ async function sendReport(options: {
   const title = reportTitle(locale, options.type, options.kind);
   const subject = `${title} · ${options.period.start} - ${options.period.end}`;
   const name = options.profile.full_name || tx(locale, "Người dùng", "User");
+  const avatarUrl = await avatarUrlForProfile(options.supabase, options.profile, options.appUrl);
   const result = await sendEmail({
     from: options.from,
     to: recipient,
     subject,
-    html: emailHtml(name, options.type, options.period, records, locale, options.appUrl, options.kind),
+    html: emailHtml(name, options.type, options.period, records, locale, options.appUrl, options.kind, avatarUrl),
     text: emailText(name, options.type, options.period, records, locale, options.appUrl, options.kind),
     resendKey: options.resendKey,
   });
@@ -471,10 +505,10 @@ async function runScheduled(request: Request) {
   for (const type of dueTypes) {
     const period = periodFor(type, today);
     const enabledColumn = type === "weekly" ? "weekly_report_enabled" : "monthly_report_enabled";
-    let { data: profiles, error: profileError } = await supabase.from("profiles").select("id,full_name,email,language").eq(enabledColumn, true);
-    if (profileError && /language/i.test(profileError.message)) {
+    let { data: profiles, error: profileError } = await supabase.from("profiles").select("id,full_name,email,language,avatar_preset,avatar_path").eq(enabledColumn, true);
+    if (profileError && /(language|avatar_preset|avatar_path)/i.test(profileError.message)) {
       const fallback = await supabase.from("profiles").select("id,full_name,email").eq(enabledColumn, true);
-      profiles = fallback.data?.map((profile) => ({ ...profile, language: "vi" })) ?? null;
+      profiles = fallback.data?.map((profile) => ({ ...profile, language: "vi", avatar_preset: null, avatar_path: null })) ?? null;
       profileError = fallback.error;
     }
     if (profileError) throw profileError;
